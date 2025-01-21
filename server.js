@@ -89,6 +89,53 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
+// Admin middleware to check password
+const checkAdminAuth = (req, res, next) => {
+    const password = req.body.password;
+    if (password === process.env.ADMIN_PASSWORD) {
+        next();
+    } else {
+        res.status(401).json({ error: 'Unauthorized' });
+    }
+};
+
+// Admin login
+app.post('/api/admin/login', (req, res) => {
+    const password = req.body.password;
+    if (password === process.env.ADMIN_PASSWORD) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ error: 'Invalid password' });
+    }
+});
+
+// Add new product
+app.post('/api/admin/products', checkAdminAuth, async (req, res) => {
+    const { productCode, quantity } = req.body;
+    
+    try {
+        await pool.query(
+            'INSERT INTO products (product_code, available_quantity) VALUES ($1, $2)',
+            [productCode, quantity]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete product
+app.delete('/api/admin/products/:productCode', checkAdminAuth, async (req, res) => {
+    const { productCode } = req.params;
+    
+    try {
+        await pool.query('DELETE FROM products WHERE product_code = $1', [productCode]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
