@@ -1,57 +1,71 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const productsList = document.getElementById('productsList');
-    const selectedCountSpan = document.getElementById('selectedCount');
     const form = document.getElementById('orderForm');
+    const selectedCountSpan = document.getElementById('selectedCount');
 
-    // Fetch products from server
-    const response = await fetch('/api/products');
-    const products = await response.json();
+    // Load products
+    try {
+        const response = await fetch('/api/products');
+        const products = await response.json();
+        
+        // Render products
+        products.forEach(product => {
+            const div = document.createElement('div');
+            div.className = 'product-item';
+            div.innerHTML = `
+                <span>${product.product_code} (${product.available_quantity} available)</span>
+                <div class="quantity-controls">
+                    <button type="button" class="minus">-</button>
+                    <input type="number" value="0" min="0" max="${product.available_quantity}">
+                    <button type="button" class="plus">+</button>
+                </div>
+            `;
+            productsList.appendChild(div);
+        });
 
-    // Render products
-    products.forEach(product => {
-        const div = document.createElement('div');
-        div.className = 'product-item';
-        div.innerHTML = `
-            <span>${product.product_code} (${product.available_quantity} available)</span>
-            <div class="quantity-controls">
-                <button type="button" class="minus">-</button>
-                <input type="number" value="0" min="0" max="${product.available_quantity}">
-                <button type="button" class="plus">+</button>
-            </div>
-        `;
-        productsList.appendChild(div);
-    });
+        // Update selected count when quantities change
+        productsList.addEventListener('change', updateSelectedCount);
+        productsList.addEventListener('click', handleQuantityButtons);
+        
+        // Handle form submission
+        form.addEventListener('submit', handleSubmit);
+    } catch (err) {
+        console.error('Error loading products:', err);
+        productsList.innerHTML = '<p>Error loading products. Please try again later.</p>';
+    }
 
-    // Handle quantity changes
-    productsList.addEventListener('click', (e) => {
+    function updateSelectedCount() {
+        const selectedCount = Array.from(productsList.querySelectorAll('input[type="number"]'))
+            .filter(input => parseInt(input.value) > 0).length;
+        selectedCountSpan.textContent = selectedCount;
+    }
+
+    function handleQuantityButtons(e) {
         if (!e.target.matches('button')) return;
         
         const input = e.target.parentElement.querySelector('input');
         const currentValue = parseInt(input.value);
+        const max = parseInt(input.max);
         
         if (e.target.classList.contains('plus')) {
-            if (getSelectedCount() >= 3) return;
-            input.value = Math.min(currentValue + 1, parseInt(input.max));
+            const selectedCount = Array.from(productsList.querySelectorAll('input[type="number"]'))
+                .filter(input => parseInt(input.value) > 0).length;
+            
+            if (selectedCount >= 3 && currentValue === 0) {
+                alert('You can only select up to 3 items');
+                return;
+            }
+            input.value = Math.min(currentValue + 1, max);
         } else {
             input.value = Math.max(currentValue - 1, 0);
         }
         
         updateSelectedCount();
-    });
-
-    function getSelectedCount() {
-        return Array.from(productsList.querySelectorAll('input'))
-            .filter(input => parseInt(input.value) > 0).length;
     }
 
-    function updateSelectedCount() {
-        selectedCountSpan.textContent = getSelectedCount();
-    }
-
-    // Handle form submission
-    form.addEventListener('submit', async (e) => {
+    async function handleSubmit(e) {
         e.preventDefault();
-
+        
         const selectedProducts = Array.from(productsList.querySelectorAll('.product-item'))
             .map(item => ({
                 code: item.querySelector('span').textContent.split(' ')[0],
@@ -60,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter(product => product.quantity > 0);
 
         if (selectedProducts.length > 3) {
-            alert('Please select a maximum of 3 products');
+            alert('You can only select up to 3 items');
             return;
         }
 
@@ -94,5 +108,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             alert('Error submitting order: ' + err.message);
         }
-    });
+    }
 }); 

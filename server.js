@@ -29,6 +29,7 @@ app.get('/api/products', async (req, res) => {
         const result = await pool.query('SELECT * FROM products');
         res.json(result.rows);
     } catch (err) {
+        console.error('Error fetching products:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -91,11 +92,11 @@ app.post('/api/orders', async (req, res) => {
 
 // Admin middleware to check password
 const checkAdminAuth = (req, res, next) => {
-    const password = req.body.password;
+    const password = req.body?.password;
     if (password === process.env.ADMIN_PASSWORD) {
         next();
     } else {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ message: 'Invalid admin password' });
     }
 };
 
@@ -154,10 +155,14 @@ app.delete('/api/admin/products/:productCode', checkAdminAuth, async (req, res) 
     const { productCode } = req.params;
     
     try {
-        await pool.query('DELETE FROM products WHERE product_code = $1', [productCode]);
-        res.json({ success: true });
+        const result = await pool.query('DELETE FROM products WHERE product_code = $1', [productCode]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        res.json({ success: true, message: 'Product deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error deleting product:', err);
+        res.status(500).json({ message: 'Failed to delete product' });
     }
 });
 
