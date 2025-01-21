@@ -23,13 +23,26 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Get available products
+// Get all products (for admin)
 app.get('/api/products', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM products');
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching products:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get only available products (for order form)
+app.get('/api/available-products', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM products WHERE available_quantity > 0'
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching available products:', err);
         res.status(500).json({ error: err.message });
     }
 });
