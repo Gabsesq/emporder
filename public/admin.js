@@ -66,12 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(productData)
             });
 
+            const result = await response.json();
+            
             if (response.ok) {
                 productForm.reset();
                 loadProducts();
+                alert('Product added successfully!');
             } else {
-                const error = await response.json();
-                alert('Error adding product: ' + error.message);
+                alert('Error: ' + (result.message || 'Failed to add product'));
             }
         } catch (err) {
             alert('Error adding product: ' + err.message);
