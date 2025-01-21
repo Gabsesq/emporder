@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Order</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Employee Order</h1>
+        <form id="orderForm">
+            <div class="form-group">
+                <label for="firstName">First Name:</label>
+                <input type="text" id="firstName" required>
+                
+                <label for="lastName">Last Name:</label>
+                <input type="text" id="lastName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="shippingAddress">Shipping Address:</label>
+                <textarea id="shippingAddress" required></textarea>
+            </div>
+
+            <div class="products-section">
+                <h2>Select 1-3 items (Selected: <span id="selectedCount">0</span>/3):</h2>
+                <div id="productsList"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" placeholder="Enter any special requests or notes here..."></textarea>
+            </div>
+
+            <button type="submit">Submit Order</button>
+        </form>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
