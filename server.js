@@ -216,6 +216,43 @@ app.delete('/api/admin/products/:productCode', checkAdminAuth, async (req, res) 
     }
 });
 
+// Update product quantity
+app.put('/api/admin/products/quantity', checkAdminAuth, async (req, res) => {
+    const { productCode, quantity } = req.body;
+    
+    try {
+        // Validate inputs
+        if (!productCode || quantity === undefined) {
+            return res.status(400).json({ 
+                message: 'Product code and quantity are required' 
+            });
+        }
+
+        // Update the quantity
+        const result = await pool.query(
+            'UPDATE products SET available_quantity = $1 WHERE product_code = $2 RETURNING *',
+            [quantity, productCode]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ 
+                message: 'Product not found' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Quantity updated successfully',
+            product: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Error updating quantity:', err);
+        res.status(500).json({ 
+            message: 'Failed to update quantity. Please try again.' 
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

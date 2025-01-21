@@ -46,10 +46,71 @@ document.addEventListener('DOMContentLoaded', () => {
             
             productsList.innerHTML = products.map(product => `
                 <div class="product-item">
-                    <span>${product.product_code} (${product.available_quantity} available)</span>
+                    <span>${product.product_code}</span>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn minus">-</button>
+                        <input type="number" value="${product.available_quantity}" min="0" class="quantity-input">
+                        <button class="quantity-btn plus">+</button>
+                        <button class="save-btn">Save</button>
+                    </div>
                     <button onclick="deleteProduct('${product.product_code}')" class="delete-btn">Delete</button>
                 </div>
             `).join('');
+
+            // Add event listeners for quantity controls
+            productsList.querySelectorAll('.product-item').forEach(item => {
+                const input = item.querySelector('.quantity-input');
+                const saveBtn = item.querySelector('.save-btn');
+                const originalValue = input.value;
+
+                // Handle plus/minus buttons
+                item.querySelector('.minus').addEventListener('click', () => {
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    saveBtn.disabled = input.value === originalValue;
+                });
+
+                item.querySelector('.plus').addEventListener('click', () => {
+                    input.value = parseInt(input.value) + 1;
+                    saveBtn.disabled = input.value === originalValue;
+                });
+
+                // Handle manual input
+                input.addEventListener('change', () => {
+                    input.value = Math.max(0, parseInt(input.value) || 0);
+                    saveBtn.disabled = input.value === originalValue;
+                });
+
+                // Handle save button
+                saveBtn.addEventListener('click', async () => {
+                    const productCode = item.querySelector('span').textContent;
+                    const newQuantity = parseInt(input.value);
+                    
+                    try {
+                        const response = await fetch('/api/admin/products/quantity', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                productCode,
+                                quantity: newQuantity,
+                                password: document.getElementById('password').value
+                            })
+                        });
+
+                        if (response.ok) {
+                            alert('Quantity updated successfully!');
+                            saveBtn.disabled = true;
+                        } else {
+                            const error = await response.json();
+                            alert('Error: ' + error.message);
+                        }
+                    } catch (err) {
+                        console.error('Error updating quantity:', err);
+                        alert('Error updating quantity: ' + err.message);
+                    }
+                });
+            });
         } catch (err) {
             console.error('Error loading products:', err);
             alert('Error loading products: ' + err.message);
