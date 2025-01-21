@@ -51,65 +51,96 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="quantity-btn minus">-</button>
                         <input type="number" value="${product.available_quantity}" min="0" class="quantity-input">
                         <button class="quantity-btn plus">+</button>
-                        <button class="save-btn">Save</button>
                     </div>
                     <button onclick="deleteProduct('${product.product_code}')" class="delete-btn">Delete</button>
                 </div>
             `).join('');
 
+            const saveAllButton = document.getElementById('saveAllButton');
+            let hasChanges = false;
+
             // Add event listeners for quantity controls
             productsList.querySelectorAll('.product-item').forEach(item => {
                 const input = item.querySelector('.quantity-input');
-                const saveBtn = item.querySelector('.save-btn');
                 const originalValue = input.value;
 
                 // Handle plus/minus buttons
                 item.querySelector('.minus').addEventListener('click', () => {
                     input.value = Math.max(0, parseInt(input.value) - 1);
-                    saveBtn.disabled = input.value === originalValue;
+                    checkForChanges();
                 });
 
                 item.querySelector('.plus').addEventListener('click', () => {
                     input.value = parseInt(input.value) + 1;
-                    saveBtn.disabled = input.value === originalValue;
+                    checkForChanges();
                 });
 
                 // Handle manual input
                 input.addEventListener('change', () => {
                     input.value = Math.max(0, parseInt(input.value) || 0);
-                    saveBtn.disabled = input.value === originalValue;
+                    checkForChanges();
                 });
+            });
 
-                // Handle save button
-                saveBtn.addEventListener('click', async () => {
+            // Function to check if any quantities have changed
+            function checkForChanges() {
+                const items = productsList.querySelectorAll('.product-item');
+                hasChanges = false;
+                
+                items.forEach(item => {
+                    const input = item.querySelector('.quantity-input');
+                    const originalValue = input.getAttribute('data-original');
+                    if (input.value !== originalValue) {
+                        hasChanges = true;
+                    }
+                });
+                
+                saveAllButton.disabled = !hasChanges;
+            }
+
+            // Handle save all button
+            saveAllButton.addEventListener('click', async () => {
+                const updates = [];
+                const items = productsList.querySelectorAll('.product-item');
+                
+                items.forEach(item => {
                     const productCode = item.querySelector('span').textContent;
-                    const newQuantity = parseInt(input.value);
+                    const newQuantity = parseInt(item.querySelector('.quantity-input').value);
+                    const originalQuantity = parseInt(item.querySelector('.quantity-input').getAttribute('data-original'));
                     
-                    try {
-                        const response = await fetch('/api/admin/products/quantity', {
+                    if (newQuantity !== originalQuantity) {
+                        updates.push({ productCode, quantity: newQuantity });
+                    }
+                });
+                
+                try {
+                    const promises = updates.map(update => 
+                        fetch('/api/admin/products/quantity', {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
-                                productCode,
-                                quantity: newQuantity,
+                                productCode: update.productCode,
+                                quantity: update.quantity,
                                 password: document.getElementById('password').value
                             })
-                        });
-
-                        if (response.ok) {
-                            alert('Quantity updated successfully!');
-                            saveBtn.disabled = true;
-                        } else {
-                            const error = await response.json();
-                            alert('Error: ' + error.message);
-                        }
-                    } catch (err) {
-                        console.error('Error updating quantity:', err);
-                        alert('Error updating quantity: ' + err.message);
+                        })
+                    );
+                    
+                    const results = await Promise.all(promises);
+                    const allSuccessful = results.every(response => response.ok);
+                    
+                    if (allSuccessful) {
+                        alert('All quantities updated successfully!');
+                        loadProducts(); // Refresh the list
+                    } else {
+                        alert('Some updates failed. Please try again.');
                     }
-                });
+                } catch (err) {
+                    console.error('Error updating quantities:', err);
+                    alert('Error updating quantities: ' + err.message);
+                }
             });
         } catch (err) {
             console.error('Error loading products:', err);
