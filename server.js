@@ -47,9 +47,45 @@ app.post('/api/orders', async (req, res) => {
             throw new Error('Maximum 3 products allowed');
         }
 
+        // Verify product availability and update quantities
+        for (let product of products) {
+            console.log(`Processing order for product ${product.code}, quantity: ${product.quantity}`);
+            
+            // Check current availability
+            const availabilityResult = await client.query(
+                'SELECT available_quantity FROM products WHERE product_code = $1',
+                [product.code]
+            );
+            
+            console.log('Current availability:', availabilityResult.rows[0]);
+            
+            if (availabilityResult.rows.length === 0) {
+                throw new Error(`Product ${product.code} not found`);
+            }
+            
+            const currentQuantity = availabilityResult.rows[0].available_quantity;
+            if (currentQuantity < product.quantity) {
+                throw new Error(`Insufficient quantity available for ${product.code}`);
+            }
+            
+            // Update product quantity
+            console.log(`Updating quantity for ${product.code}: ${currentQuantity} - ${product.quantity}`);
+            await client.query(
+                'UPDATE products SET available_quantity = available_quantity - $1 WHERE product_code = $2',
+                [product.quantity, product.code]
+            );
+            
+            // Verify the update
+            const verifyUpdate = await client.query(
+                'SELECT available_quantity FROM products WHERE product_code = $1',
+                [product.code]
+            );
+            console.log(`New quantity for ${product.code}:`, verifyUpdate.rows[0]);
+        }
+
         // Insert order
         const orderResult = await client.query(
-            'INSERT INTO orders (first_name, last_name, shipping_address, notes) VALUES ($1, $2, $3, $4) RETURNING id',
+            'INSERT INTO orders ("first_name", "last_name", "shipping_address", "notes") VALUES ($1, $2, $3, $4) RETURNING id',
             [firstName, lastName, shippingAddress, notes]
         );
         
@@ -58,7 +94,7 @@ app.post('/api/orders', async (req, res) => {
         // Insert order items
         for (let product of products) {
             await client.query(
-                'INSERT INTO order_items (order_id, product_code, quantity) VALUES ($1, $2, $3)',
+                'INSERT INTO order_items ("order_id", "product_code", "quantity") VALUES ($1, $2, $3)',
                 [orderId, product.code, product.quantity]
             );
         }
@@ -84,6 +120,7 @@ app.post('/api/orders', async (req, res) => {
         res.json({ success: true, orderId });
     } catch (err) {
         await client.query('ROLLBACK');
+        console.error('Order error:', err);
         res.status(500).json({ error: err.message });
     } finally {
         client.release();
