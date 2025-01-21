@@ -114,13 +114,38 @@ app.post('/api/admin/products', checkAdminAuth, async (req, res) => {
     const { productCode, quantity } = req.body;
     
     try {
+        // Validate inputs
+        if (!productCode || !quantity) {
+            return res.status(400).json({ 
+                message: 'Product code and quantity are required' 
+            });
+        }
+
+        // Check if product already exists
+        const existingProduct = await pool.query(
+            'SELECT * FROM products WHERE product_code = $1',
+            [productCode]
+        );
+
+        if (existingProduct.rows.length > 0) {
+            return res.status(400).json({ 
+                message: 'Product code already exists' 
+            });
+        }
+
         await pool.query(
             'INSERT INTO products (product_code, available_quantity) VALUES ($1, $2)',
             [productCode, quantity]
         );
-        res.json({ success: true });
+        res.json({ 
+            success: true, 
+            message: 'Product added successfully' 
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error adding product:', err);
+        res.status(500).json({ 
+            message: 'Failed to add product. Please try again.' 
+        });
     }
 });
 
