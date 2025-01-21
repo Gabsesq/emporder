@@ -73,6 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }))
             .filter(product => product.quantity > 0);
 
+        console.log('Submitting order with products:', selectedProducts);
+
         if (selectedProducts.length > 3) {
             alert('You can only select up to 3 items');
             return;
