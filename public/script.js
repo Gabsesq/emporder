@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const div = document.createElement('div');
             div.className = 'product-item';
             div.innerHTML = `
-                <span>${product.product_code} (${product.available_quantity} available)</span>
+                <span>${product.product_code} (<span class="availability">${product.available_quantity} available</span>)</span>
                 <div class="quantity-controls">
                     <button type="button" class="minus">-</button>
                     <input type="number" value="0" min="0" max="${product.available_quantity}">

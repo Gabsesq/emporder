@@ -1,23 +1,72 @@
 .container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Center align the heading */
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2em;
 }
 
 .form-group {
     margin-bottom: 20px;
+    padding: 20px 30px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(190, 46, 190, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(190, 46, 190, 0.15);
 }
 
 label {
     display: block;
     margin-bottom: 5px;
+    color: #666;
+    font-size: 0.9em;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-note {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 8px;
+    font-style: italic;
 }
 
 input[type="text"],
 textarea {
     width: 100%;
-    padding: 8px;
+    padding: 8px 12px;
     margin-bottom: 10px;
+    box-sizing: border-box;
+    border: 2px solid rgba(190, 46, 190, 0.2);
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: rgba(190, 46, 190, 0.5);
+    box-shadow: 0 0 0 3px rgba(190, 46, 190, 0.1);
+    background: white;
 }
 
 .product-item {
@@ -25,13 +74,33 @@ textarea {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid rgba(190, 46, 190, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+.product-item:hover {
+    background: rgba(190, 46, 190, 0.05);
+}
+
+.product-item span {
+    font-weight: 500;
+    color: #444;
+}
+
+/* Style for availability count */
+.product-item span .availability {
+    color: #a6226e;
+    font-weight: 600;
 }
 
 .quantity-controls {
     display: flex;
     align-items: center;
     gap: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .quantity-controls input {
@@ -39,20 +108,204 @@ textarea {
     text-align: center;
 }
 
+/* Glass morphism effect for buttons */
+.glass-button {
+    background: rgba(190, 46, 190, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
 button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
+    padding: 12px 24px;
+    width: 5vw;
+    background: rgba(190, 46, 190, 0.8);
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 button:hover {
-    background-color: #45a049;
+    background: rgba(190, 46, 190, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .minus, .plus {
-    padding: 5px 10px;
-    background-color: #ddd;
+    padding: 8px 12px;
+    background: rgba(221, 221, 221, 0.8);
     color: black;
+    border-radius: 4px;
+    font-weight: bold;
+    min-width: 32px;
+}
+
+.minus:hover, .plus:hover {
+    background: rgba(221, 221, 221, 0.95);
+    color: #be2ebe;
+}
+
+/* Style for the submit order button */
+button[type="submit"] {
+    background: linear-gradient(135deg, rgba(190, 46, 190, 0.8), rgba(155, 51, 155, 0.9));
+    width: 30%;
+    margin-top: 20px;
+    font-size: 1.1em;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Style for delete button in admin panel */
+.delete-btn {
+    background: rgba(220, 53, 69, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    width: auto;
+    padding: 8px 16px;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: translateY(-1px);
+}
+
+/* Style for primary admin buttons (Add Product and Save All Changes) */
+.admin-primary-btn {
+    background: rgb(174, 84, 174);
+    border-radius: 100px;
+    padding: 12px 30px;
+    width: auto;
+    min-width: 180px;
+    font-size: 2em;
+    font-weight: normal;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: none;
+    letter-spacing: normal;
+}
+
+.admin-primary-btn:hover {
+    background: rgb(158, 76, 158);
+    transform: translateY(-2px);
+}
+
+/* Style for save all button in admin panel */
+.save-all-btn {
+    background: linear-gradient(135deg, rgba(190, 46, 190, 0.8), rgba(155, 51, 155, 0.9));
+    width: auto;
+    min-width: 200px;
+    padding: 12px 30px;
+    font-size: 1.5em;
+    margin-top: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.save-all-btn:disabled {
+    background: rgba(204, 204, 204, 0.8);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Add some subtle animation to quantity inputs */
+.quantity-controls input {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(190, 46, 190, 0.2);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.quantity-controls input:focus {
+    outline: none;
+    border-color: rgba(190, 46, 190, 0.5);
+    box-shadow: 0 0 0 2px rgba(190, 46, 190, 0.1);
+}
+
+/* Products section styling */
+.products-section {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    padding: 20px 30px;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(190, 46, 190, 0.1);
+}
+
+.products-section h2 {
+    color: #333;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(190, 46, 190, 0.1);
+}
+
+/* Add some page styling */
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e4e4 100%);
+    min-height: 100vh;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Name fields container */
+.name-fields {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.name-fields .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .name-fields {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .name-fields .form-group {
+        margin-bottom: 10px;
+    }
+
+    .container {
+        padding: 15px;
+        margin: 10px;
+    }
+
+    .form-group {
+        padding: 15px;
+    }
+
+    button[type="submit"] {
+        width: 100%;
+    }
+}
+
+/* Override the default button width for admin panel */
+.product-item button {
+    width: auto;
+    min-width: unset;
 } 

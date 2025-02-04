@@ -10,16 +10,21 @@
     <div class="container">
         <h1>Employee Order</h1>
         <form id="orderForm">
-            <div class="form-group">
-                <label for="firstName">First Name:</label>
-                <input type="text" id="firstName" required>
+            <div class="name-fields">
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" required>
+                </div>
                 
-                <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName" required>
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" required>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="shippingAddress">Shipping Address:</label>
+                <div class="input-note">*** "In office" if you are not a remote worker ***</div>
                 <textarea id="shippingAddress" required></textarea>
             </div>
 
