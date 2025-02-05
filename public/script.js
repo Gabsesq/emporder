@@ -35,9 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateSelectedCount() {
-        const selectedCount = Array.from(productsList.querySelectorAll('input[type="number"]'))
-            .filter(input => parseInt(input.value) > 0).length;
-        selectedCountSpan.textContent = selectedCount;
+        const totalQuantity = Array.from(productsList.querySelectorAll('input[type="number"]'))
+            .reduce((sum, input) => sum + parseInt(input.value), 0);
+        selectedCountSpan.textContent = totalQuantity;
+        return totalQuantity;
     }
 
     function handleQuantityButtons(e) {
@@ -48,10 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const max = parseInt(input.max);
         
         if (e.target.classList.contains('plus')) {
-            const selectedCount = Array.from(productsList.querySelectorAll('input[type="number"]'))
-                .filter(input => parseInt(input.value) > 0).length;
+            const totalQuantity = updateSelectedCount();
             
-            if (selectedCount >= 3 && currentValue === 0) {
+            if (totalQuantity >= 3) {
                 alert('You can only select up to 3 items');
                 return;
             }
@@ -66,6 +66,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleSubmit(e) {
         e.preventDefault();
         
+        const totalQuantity = updateSelectedCount();
+        if (totalQuantity > 3) {
+            alert('You can only order up to 3 items total');
+            return;
+        }
+
         const selectedProducts = Array.from(productsList.querySelectorAll('.product-item'))
             .map(item => ({
                 code: item.querySelector('span').textContent.split(' ')[0],
@@ -74,11 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter(product => product.quantity > 0);
 
         console.log('Submitting order with products:', selectedProducts);
-
-        if (selectedProducts.length > 3) {
-            alert('You can only select up to 3 items');
-            return;
-        }
 
         const orderData = {
             firstName: document.getElementById('firstName').value,
@@ -100,7 +101,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await response.json();
             
             if (result.success) {
-                alert('Order submitted successfully!');
+                // Show success modal
+                const modal = document.getElementById('successModal');
+                const closeBtn = document.getElementById('closeModal');
+                modal.style.display = 'block';
+                
+                // Close modal when clicking the close button
+                closeBtn.onclick = () => {
+                    modal.style.display = 'none';
+                };
+                
+                // Close modal when clicking outside
+                window.onclick = (event) => {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                };
+                
                 form.reset();
                 productsList.querySelectorAll('input').forEach(input => input.value = 0);
                 updateSelectedCount();
