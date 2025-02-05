@@ -61,6 +61,12 @@ async function initializeDatabase() {
                 'INSERT INTO admin_auth (email) VALUES ($1)',
                 ['gabbyesquibel1999@gmail.com']
             );
+        } else {
+            // Ensure logged out state on server start
+            await pool.query(
+                'UPDATE admin_auth SET last_login = NULL WHERE email = $1',
+                ['gabbyesquibel1999@gmail.com']
+            );
         }
 
         console.log('Database initialized successfully');
