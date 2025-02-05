@@ -18,4 +18,14 @@ CREATE TABLE order_items (
     order_id INTEGER REFERENCES orders(id),
     product_code VARCHAR(50) NOT NULL,
     quantity INTEGER NOT NULL
-); 
+);
+
+CREATE TABLE admin_auth (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    verification_code VARCHAR(6),
+    code_expiry TIMESTAMP,
+    last_login TIMESTAMP
+);
+
+INSERT INTO admin_auth (email) VALUES ('gabbyesquibel1999@gmail.com'); 
