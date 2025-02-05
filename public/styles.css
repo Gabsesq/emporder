@@ -308,4 +308,43 @@ body {
 .product-item button {
     width: auto;
     min-width: unset;
+}
+
+.header-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.back-btn {
+    text-decoration: none;
+    color: rgb(174, 84, 174);
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    margin-right: 20px;
+}
+
+.back-btn:hover {
+    background: rgba(174, 84, 174, 0.1);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.logout-btn {
+    background: rgba(220, 53, 69, 0.8);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    width: auto;
+    min-width: unset;
+}
+
+.logout-btn:hover {
+    background: rgba(220, 53, 69, 0.9);
 } 

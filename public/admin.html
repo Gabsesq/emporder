@@ -87,7 +87,19 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" required>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" class="admin-primary-btn">Next</button>
+        </form>
+    </div>
+
+    <div id="verification-section" class="login-form" style="display: none;">
+        <h2>Verify Code</h2>
+        <p>A verification code has been sent to your email.</p>
+        <form id="verificationForm">
+            <div class="form-group">
+                <label for="verificationCode">Enter 6-digit code:</label>
+                <input type="text" id="verificationCode" maxlength="6" pattern="\d{6}" required>
+            </div>
+            <button type="submit" class="admin-primary-btn">Verify</button>
         </form>
     </div>
 

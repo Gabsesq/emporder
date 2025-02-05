@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .dashboard-container {
+            max-width: 800px;
+            margin: 100px auto;
+            padding: 20px;
+        }
+
+        .dashboard-options {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .dashboard-option {
+            width: 250px;
+            height: 250px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(190, 46, 190, 0.1);
+        }
+
+        .dashboard-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(190, 46, 190, 0.2);
+        }
+
+        .dashboard-option i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: rgb(174, 84, 174);
+        }
+
+        .dashboard-option h3 {
+            margin: 10px 0;
+            font-size: 1.5em;
+            color: #333;
+            text-align: center;
+        }
+
+        .dashboard-option p {
+            text-align: center;
+            color: #666;
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #cc0000;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Admin Dashboard</h1>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+        
+        <div class="dashboard-options">
+            <a href="/product-management.html" class="dashboard-option">
+                <i class="fas fa-box"></i>
+                <h3>Product Management</h3>
+                <p>Manage inventory and product availability</p>
+            </a>
+            
+            <a href="/creditcustomer.html" class="dashboard-option">
+                <i class="fas fa-credit-card"></i>
+                <h3>CC Auth</h3>
+                <p>Manage customer credit card authorizations</p>
+            </a>
+        </div>
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+</html> 
