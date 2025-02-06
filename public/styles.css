@@ -424,4 +424,73 @@ body {
 @keyframes slideIn {
     from { transform: translateY(-100px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* Credit card list styles */
+.cc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(190, 46, 190, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.cc-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(190, 46, 190, 0.15);
+}
+
+.cc-info h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.cc-info p {
+    margin: 5px 0;
+    color: #666;
+}
+
+/* Card details form layout */
+.card-details {
+    display: flex;
+    gap: 20px;
+}
+
+.card-details > div {
+    flex: 1;
+}
+
+.sensitive-info {
+    background: rgba(174, 84, 174, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.card-details {
+    margin-top: 10px;
+}
+
+.card-details p {
+    margin: 8px 0;
+}
+
+.reveal-btn {
+    background: transparent;
+    color: rgb(174, 84, 174);
+    border: 1px solid rgb(174, 84, 174);
+    padding: 4px 8px;
+    font-size: 0.8em;
+    min-width: 150px;
+    box-shadow: none;
+}
+
+.reveal-btn:hover {
+    background: rgba(174, 84, 174, 0.1);
+    transform: none;
+    box-shadow: none;
 } 

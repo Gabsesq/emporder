@@ -3,9 +3,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
 app.use(bodyParser.json());
+app.use(express.static('public'));
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -37,6 +41,33 @@ transporter.verify(function(error, success) {
     }
 });
 
+// Encryption key management
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+// Convert the key to a valid 32-byte buffer
+const ENCRYPTION_KEY_BUFFER = crypto
+    .createHash('sha256')
+    .update(String(ENCRYPTION_KEY))
+    .digest();
+const IV_LENGTH = 16;
+
+function encrypt(text) {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text) {
+    const [ivHex, encryptedHex] = text.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const encrypted = Buffer.from(encryptedHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+}
+
 // Initialize database tables
 async function initializeDatabase() {
     try {
@@ -47,6 +78,21 @@ async function initializeDatabase() {
                 verification_code VARCHAR(6),
                 code_expiry TIMESTAMP,
                 last_login TIMESTAMP
+            )
+        `);
+
+        // Ensure credit_cards table exists with correct structure
+        await pool.query(`
+            DROP TABLE IF EXISTS credit_cards;
+            CREATE TABLE credit_cards (
+                id SERIAL PRIMARY KEY,
+                customer_name VARCHAR(100) NOT NULL,
+                card_number_encrypted TEXT NOT NULL,
+                cvv_encrypted TEXT NOT NULL,
+                expiry_date VARCHAR(5) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                phone VARCHAR(20),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -170,9 +216,6 @@ app.get(['/admin-dashboard.html', '/product-management.html', '/creditcustomer.h
         res.redirect('/admin.html');
     }
 });
-
-// Serve static files after protecting routes
-app.use(express.static('public'));
 
 // Get all products (for admin)
 app.get('/api/products', async (req, res) => {
@@ -517,6 +560,135 @@ app.post('/api/admin/verify-code', async (req, res) => {
         client.release();
     }
 });
+
+// Submit new credit card authorization (public route)
+app.post('/api/cc-auth', async (req, res) => {
+    const { customerName, cardNumber, expiryDate, cvv, email, phone } = req.body;
+    
+    try {
+        // Check if all required fields are present
+        if (!customerName || !cardNumber || !expiryDate || !cvv || !email) {
+            return res.status(400).json({ message: 'All required fields must be provided' });
+        }
+
+        // Encrypt sensitive data
+        const encryptedCardNumber = encrypt(cardNumber);
+        const encryptedCVV = encrypt(cvv);
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query(
+                'INSERT INTO credit_cards (customer_name, card_number_encrypted, expiry_date, cvv_encrypted, email, phone) VALUES ($1, $2, $3, $4, $5, $6)',
+                [customerName, encryptedCardNumber, expiryDate, encryptedCVV, email, phone]
+            );
+            await client.query('COMMIT');
+            res.json({ success: true });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Full error stack:', err.stack);
+        console.error('Error saving credit card:', err);
+        res.status(500).json({ message: 'Failed to save credit card authorization' });
+    }
+});
+
+// Get all credit card authorizations (admin only)
+app.get('/api/admin/cc-auth', checkAdminAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, customer_name, card_number_encrypted, cvv_encrypted, expiry_date, email, phone, created_at FROM credit_cards ORDER BY created_at DESC'
+        );
+
+        // Decrypt sensitive data before sending
+        const decryptedCards = result.rows.map(card => ({
+            id: card.id,
+            customer_name: card.customer_name,
+            card_number: decrypt(card.card_number_encrypted),
+            expiry_date: card.expiry_date,
+            cvv: decrypt(card.cvv_encrypted),
+            email: card.email,
+            phone: card.phone,
+            created_at: card.created_at
+        }));
+
+        res.json(decryptedCards);
+    } catch (err) {
+        console.error('Error fetching credit cards:', err);
+        res.status(500).json({ message: 'Failed to fetch credit cards' });
+    }
+});
+
+// Delete credit card authorization (admin only)
+app.delete('/api/admin/cc-auth/:id', checkAdminAuth, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        const result = await pool.query(
+            'DELETE FROM credit_cards WHERE id = $1',
+            [id]
+        );
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Credit card authorization not found' });
+        }
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting credit card:', err);
+        res.status(500).json({ message: 'Failed to delete credit card authorization' });
+    }
+});
+
+// Limit attempts to view sensitive data
+const sensitiveDataLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per window
+    message: 'Too many attempts to view sensitive data. Please try again later.'
+});
+
+async function logAuditEvent(event_type, user_id, details, ip) {
+    try {
+        await pool.query(
+            'INSERT INTO audit_logs (event_type, user_id, details, ip_address) VALUES ($1, $2, $3, $4)',
+            [event_type, user_id, details, ip]
+        );
+    } catch (err) {
+        console.error('Audit logging failed:', err);
+    }
+}
+
+// Use in sensitive routes
+app.post('/api/admin/verify-view', sensitiveDataLimiter, async (req, res) => {
+    const { password, cardId } = req.body;
+    
+    if (password === process.env.ADMIN_PASSWORD) {
+        await logAuditEvent('view_sensitive_data', 'admin', `Viewed card ID: ${cardId}`, req.ip);
+        try {
+            // Log the viewing attempt for audit purposes
+            console.log(`Admin viewed full card number for ID: ${cardId} at ${new Date().toISOString()}`);
+            res.json({ success: true });
+        } catch (err) {
+            res.status(500).json({ message: 'Server error' });
+        }
+    } else {
+        res.status(401).json({ message: 'Invalid password' });
+    }
+});
+
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+    directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'"],
+    },
+}));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
