@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             if (data.success) {
+                localStorage.setItem('isAdminAuthenticated', 'true');
                 window.location.href = '/admin-dashboard.html';
             }
         } catch (err) {
