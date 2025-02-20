@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
             await fetch('/api/admin/logout', { method: 'POST' });
+            localStorage.removeItem('isAdminAuthenticated');
             window.location.href = '/admin.html';
         } catch (err) {
             console.error('Logout failed:', err);
