@@ -21,51 +21,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // New Customer Form Handling
     const newCustomerForm = document.getElementById('ccAuthForm');
     if (newCustomerForm) {
-        const cardNumber = document.getElementById('cardNumber');
-        const expiryDate = document.getElementById('expiryDate');
-        const cvv = document.getElementById('cvv');
-        const phone = document.getElementById('phone');
+    const cardNumber = document.getElementById('cardNumber');
+    const expiryDate = document.getElementById('expiryDate');
+    const cvv = document.getElementById('cvv');
+    const phone = document.getElementById('phone');
         const sameAsBillingCheckbox = document.getElementById('sameAsBilling');
         const shippingSection = document.getElementById('shippingSection');
 
-        // Format card number as user types
+    // Format card number as user types
         if (cardNumber) {
-            cardNumber.addEventListener('input', (e) => {
-                let value = e.target.value.replace(/\D/g, '');
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i > 0 && i % 4 === 0) {
-                        formatted += ' ';
-                    }
-                    formatted += value[i];
-                }
+    cardNumber.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        let formatted = '';
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formatted += ' ';
+            }
+            formatted += value[i];
+        }
                 e.target.value = formatted.slice(0, 19);
-            });
+    });
         }
 
         // Format expiry date
         if (expiryDate) {
-            expiryDate.addEventListener('input', (e) => {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length >= 2) {
-                    value = value.slice(0, 2) + '/' + value.slice(2);
-                }
-                e.target.value = value.slice(0, 5);
-            });
+    expiryDate.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        }
+        e.target.value = value.slice(0, 5);
+    });
         }
 
-        // Only allow numbers in CVV
+    // Only allow numbers in CVV
         if (cvv) {
-            cvv.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
-            });
+    cvv.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    });
         }
 
-        // Format phone number
+    // Format phone number
         if (phone) {
-            phone.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-            });
+    phone.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    });
         }
 
         sameAsBillingCheckbox.addEventListener('change', (e) => {
@@ -345,24 +345,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return /^[0-9]{3,4}$/.test(cvv);
     }
 
-    function luhnCheck(val) {
-        let sum = 0;
-        let isEven = false;
-        
-        for (let i = val.length - 1; i >= 0; i--) {
-            let digit = parseInt(val[i], 10);
+        function luhnCheck(val) {
+            let sum = 0;
+            let isEven = false;
+            
+            for (let i = val.length - 1; i >= 0; i--) {
+                let digit = parseInt(val[i], 10);
 
-            if (isEven) {
-                digit *= 2;
-                if (digit > 9) {
-                    digit -= 9;
+                if (isEven) {
+                    digit *= 2;
+                    if (digit > 9) {
+                        digit -= 9;
+                    }
                 }
-            }
 
-            sum += digit;
-            isEven = !isEven;
+                sum += digit;
+                isEven = !isEven;
+            }
+            
+            return (sum % 10) === 0;
         }
-        
-        return (sum % 10) === 0;
-    }
 }); 
