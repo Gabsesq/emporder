@@ -9,41 +9,458 @@
 <body>
     <div class="container">
         <h1>Credit Card Authorization Form</h1>
-        <form id="ccAuthForm">
-            <div class="form-group">
-                <label for="customerName">Full Name (as shown on card):</label>
-                <input type="text" id="customerName" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="cardNumber">Card Number:</label>
-                <input type="text" id="cardNumber" maxlength="16" required>
-            </div>
-            
-            <div class="form-group card-details">
-                <div>
-                    <label for="expiryDate">Expiry Date (MM/YY):</label>
-                    <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" required>
-                </div>
-                <div>
-                    <label for="cvv">CVV:</label>
-                    <input type="text" id="cvv" maxlength="4" required>
-                </div>
+        
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="new">New Customer</button>
+                <button class="tab-btn" data-tab="update">Update Card Info</button>
             </div>
 
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" required>
+            <!-- New Customer Form -->
+            <div class="tab-content active" id="newCustomerForm">
+                <form id="ccAuthForm" class="auth-form">
+                    <!-- Customer Profile Information -->
+                    <div class="section">
+                        <h2>Customer Profile Information</h2>
+                        <div class="form-group">
+                            <label for="customerId">Customer ID:</label>
+                            <input type="text" id="customerId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            <input type="text" id="description">
+                        </div>
+                    </div>
+
+                    <!-- Payment Profile Information -->
+                    <div class="section">
+                        <h2>Payment Profile Information</h2>
+                        <div class="billing-info">
+                            <h3>Billing Information</h3>
+                            <div class="form-group">
+                                <label for="customerType">Customer Type:</label>
+                                <select id="customerType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="individual">Individual</option>
+                                    <option value="business">Business</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="firstName">First Name:</label>
+                                <input type="text" id="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name:</label>
+                                <input type="text" id="lastName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="company">Company:</label>
+                                <input type="text" id="company">
+                            </div>
+                            <div class="form-group">
+                                <label for="address">Address:</label>
+                                <input type="text" id="address" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="city">City:</label>
+                                <input type="text" id="city" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="state">State/Province:</label>
+                                    <input type="text" id="state" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="zipCode">Zip/Postal Code:</label>
+                                    <input type="text" id="zipCode" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="country">Country:</label>
+                                <input type="text" id="country" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="phone">Phone:</label>
+                                    <input type="tel" id="phone" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fax">Fax:</label>
+                                    <input type="tel" id="fax">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shipping Address Section -->
+                        <div class="shipping-section">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="sameAsBilling" checked>
+                                    Shipping Address same as Billing
+                                </label>
+                            </div>
+
+                            <!-- New shipping info section - hidden by default -->
+                            <div id="shippingSection" style="display: none;">
+                                <h3>Shipping Information</h3>
+                                <div class="form-group">
+                                    <label for="shippingFirstName">First Name:</label>
+                                    <input type="text" id="shippingFirstName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="shippingLastName">Last Name:</label>
+                                    <input type="text" id="shippingLastName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="shippingCompany">Company:</label>
+                                    <input type="text" id="shippingCompany">
+                                </div>
+                                <div class="form-group">
+                                    <label for="shippingAddress">Address:</label>
+                                    <input type="text" id="shippingAddress">
+                                </div>
+                                <div class="form-group">
+                                    <label for="shippingCity">City:</label>
+                                    <input type="text" id="shippingCity">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="shippingState">State/Province:</label>
+                                        <input type="text" id="shippingState">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="shippingZipCode">Zip/Postal Code:</label>
+                                        <input type="text" id="shippingZipCode">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="shippingCountry">Country:</label>
+                                    <input type="text" id="shippingCountry">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="shippingPhone">Phone:</label>
+                                        <input type="tel" id="shippingPhone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="shippingFax">Fax:</label>
+                                        <input type="tel" id="shippingFax">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="payment-info">
+                            <h3>Payment Information</h3>
+                            <div class="form-group">
+                                <label>Payment Type:</label>
+                                <div class="radio-group">
+                                    <input type="radio" id="creditCard" name="paymentType" value="creditCard" checked>
+                                    <label for="creditCard">Credit Card</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="cardNumber">Card Number:</label>
+                                <input type="text" id="cardNumber" maxlength="16" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiryDate">Expiration Date:</label>
+                                    <input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvv">CVV:</label>
+                                    <input type="text" id="cvv" maxlength="4" placeholder="***" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="createShippingProfile">
+                                Create a Shipping Profile from the information above
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit">Submit Authorization</button>
+                </form>
             </div>
 
-            <div class="form-group">
-                <label for="phone">Phone Number:</label>
-                <input type="tel" id="phone" required>
-            </div>
+            <!-- Update Card Form -->
+            <div class="tab-content" id="updateCustomerForm">
+                <form id="ccUpdateForm" class="auth-form">
+                    <div class="section">
+                        <h2>Update Card Information</h2>
+                        <p class="info-text">Enter the customer's email to find their existing profile and update their card information.</p>
+                        
+                        <!-- Search for existing customer -->
+                        <div class="form-group search-group">
+                            <label for="existingBusiness">Business Name:</label>
+                            <div class="search-row">
+                                <input type="text" id="existingBusiness" required>
+                                <button type="button" id="findCustomer" class="search-btn">Find Business</button>
+                            </div>
+                        </div>
 
-            <button type="submit">Submit Authorization</button>
-        </form>
+                        <!-- Customer details will show here after search -->
+                        <div id="customerDetails">
+                            <div class="customer-info">
+                                <h3>Current Customer Information</h3>
+                                <div class="info-display">
+                                    <p><strong>Name:</strong> <span id="customerName"></span></p>
+                                    <p><strong>Customer ID:</strong> <span id="displayCustomerId"></span></p>
+                                    <p><strong>Business Name:</strong> <span id="businessName"></span></p>
+                                    <p><strong>Current Card:</strong> <span id="currentCard">**** **** **** </span></p>
+                                </div>
+                            </div>
+
+                            <div class="update-section">
+                                <h3>New Card Information</h3>
+                                <div class="form-group">
+                                    <label>Accepted Methods:</label>
+                                    <p class="accepted-cards">American Express, Diners Club, Discover, EnRoute, JCB, MasterCard, Visa</p>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="sameBilling" checked>
+                                        Billing Address remains the same
+                                    </label>
+                                </div>
+
+                                <!-- New billing info section - hidden by default -->
+                                <div id="newBillingSection" style="display: none;">
+                                    <h3>New Billing Information</h3>
+                                    <div class="form-group">
+                                        <label for="updateBusinessName">Business Name:</label>
+                                        <input type="text" id="updateBusinessName">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="updateAddress">Address:</label>
+                                        <input type="text" id="updateAddress" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="updateCity">City:</label>
+                                        <input type="text" id="updateCity" required>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="updateState">State/Province:</label>
+                                            <input type="text" id="updateState" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="updateZipCode">Zip/Postal Code:</label>
+                                            <input type="text" id="updateZipCode" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="updateCountry">Country:</label>
+                                        <input type="text" id="updateCountry" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="updateCardNumber">Card Number:</label>
+                                    <input type="text" id="updateCardNumber" maxlength="16" required>
+                                </div>
+                                
+                                <div class="card-security-row">
+                                    <div class="form-group">
+                                        <label for="updateExpiryDate">Expiration Date:</label>
+                                        <input type="text" id="updateExpiryDate" maxlength="5" placeholder="MM/YY" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="updateCvv">CVV:</label>
+                                        <input type="text" id="updateCvv" maxlength="4" placeholder="***" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="submit-btn">Update Card Information</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
+
+    <style>
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            background: rgba(174, 84, 174, 0.2);
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1.1em;
+            min-width: unset;
+            width: auto;
+            color: rgb(145, 60, 145);
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            background: rgb(174, 84, 174);
+            color: white;
+        }
+
+        .tab-btn:hover {
+            background: rgba(174, 84, 174, 0.8);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid rgb(174, 84, 174);
+            padding-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-group {
+            margin-bottom: 30px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-btn {
+            background: rgb(174, 84, 174);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .info-text {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .customer-info {
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .info-display {
+            margin-top: 10px;
+        }
+
+        .info-display p {
+            margin: 5px 0;
+        }
+
+        .accepted-cards {
+            font-size: 0.9em;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .update-section {
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .card-security-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-security-row .form-group {
+            flex: 1;
+        }
+
+        #updateCvv {
+            max-width: 100px;
+        }
+
+        #updateExpiryDate {
+            max-width: 100px;
+        }
+
+        #updateBusinessName {
+            width: 100%;
+        }
+
+        .success-message {
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            color: #3c763d;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .success-message h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .success-message p {
+            margin: 0;
+        }
+    </style>
+
     <script src="cc-auth-form.js"></script>
 </body>
 </html> 

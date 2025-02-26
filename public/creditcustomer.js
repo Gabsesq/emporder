@@ -66,37 +66,87 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Add combined toggle function
+    // Update the toggle function
     window.toggleSensitiveData = async (button, cardId) => {
         try {
             if (button.textContent === 'Show Hidden Numbers') {
-                const password = prompt('Enter admin password to view sensitive data:');
+                // Create and show phone verification modal
+                const modalHtml = `
+                    <div id="verificationModal" class="modal">
+                        <div class="modal-content">
+                            <h3>Phone Verification Required</h3>
+                            <p>A verification code will be sent to your registered phone number.</p>
+                            <button id="sendCode" class="verify-btn">Send Verification Code</button>
+                        </div>
+                    </div>
+                `;
                 
-                const response = await fetch('/api/admin/verify-view', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ password, cardId })
-                });
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = document.getElementById('verificationModal');
+                
+                // Handle send code button
+                document.getElementById('sendCode').addEventListener('click', async () => {
+                    try {
+                        const verifyResponse = await fetch('/api/admin/request-verification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                cardId,
+                                phoneToken: true // Signal that we want to use phone verification
+                            })
+                        });
 
-                if (!response.ok) {
-                    throw new Error('Invalid password');
-                }
+                        if (!verifyResponse.ok) {
+                            throw new Error('Failed to send verification code');
+                        }
 
-                const container = button.closest('.sensitive-info');
-                container.querySelectorAll('.masked-number, .masked-cvv').forEach(el => el.style.display = 'none');
-                container.querySelectorAll('.full-number, .full-cvv').forEach(el => el.style.display = 'inline');
-                button.textContent = 'Hide Numbers';
+                        // Update modal for code entry
+                        modal.querySelector('.modal-content').innerHTML = `
+                            <h3>Enter Verification Code</h3>
+                            <p>A code has been sent to your phone</p>
+                            <input type="text" id="verificationCode" placeholder="Enter code" maxlength="6">
+                            <button id="submitCode" class="verify-btn">Verify</button>
+                        `;
 
-                // Auto-hide after 30 seconds
-                setTimeout(() => {
-                    if (button.textContent === 'Hide Numbers') {
-                        container.querySelectorAll('.masked-number, .masked-cvv').forEach(el => el.style.display = 'inline');
-                        container.querySelectorAll('.full-number, .full-cvv').forEach(el => el.style.display = 'none');
-                        button.textContent = 'Show Hidden Numbers';
+                        // Handle verification code submission
+                        document.getElementById('submitCode').addEventListener('click', async () => {
+                            const code = document.getElementById('verificationCode').value;
+                            const verifyCodeResponse = await fetch('/api/admin/verify-code', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ 
+                                    code,
+                                    cardId
+                                })
+                            });
+
+                            if (verifyCodeResponse.ok) {
+                                modal.remove();
+                                const container = button.closest('.sensitive-info');
+                                container.querySelectorAll('.masked-number, .masked-cvv').forEach(el => el.style.display = 'none');
+                                container.querySelectorAll('.full-number, .full-cvv').forEach(el => el.style.display = 'inline');
+                                button.textContent = 'Hide Numbers';
+
+                                // Auto-hide after 30 seconds
+                                setTimeout(() => {
+                                    if (button.textContent === 'Hide Numbers') {
+                                        container.querySelectorAll('.masked-number, .masked-cvv').forEach(el => el.style.display = 'inline');
+                                        container.querySelectorAll('.full-number, .full-cvv').forEach(el => el.style.display = 'none');
+                                        button.textContent = 'Show Hidden Numbers';
+                                    }
+                                }, 30000);
+                            } else {
+                                alert('Invalid verification code');
+                            }
+                        });
+                    } catch (err) {
+                        alert(err.message);
                     }
-                }, 30000);
+                });
             } else {
                 const container = button.closest('.sensitive-info');
                 container.querySelectorAll('.masked-number, .masked-cvv').forEach(el => el.style.display = 'inline');

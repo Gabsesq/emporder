@@ -6,6 +6,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const twilio = require('twilio');
 
 const app = express();
 app.use(bodyParser.json());
@@ -42,17 +43,12 @@ transporter.verify(function(error, success) {
 });
 
 // Encryption key management
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-// Convert the key to a valid 32-byte buffer
-const ENCRYPTION_KEY_BUFFER = crypto
-    .createHash('sha256')
-    .update(String(ENCRYPTION_KEY))
-    .digest();
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-here'; // 32 bytes
 const IV_LENGTH = 16;
 
 function encrypt(text) {
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -61,9 +57,9 @@ function encrypt(text) {
 function decrypt(text) {
     const [ivHex, encryptedHex] = text.split(':');
     const iv = Buffer.from(ivHex, 'hex');
-    const encrypted = Buffer.from(encryptedHex, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
-    let decrypted = decipher.update(encrypted);
+    const encryptedText = Buffer.from(encryptedHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+    let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
 }
@@ -92,6 +88,7 @@ async function initializeDatabase() {
                 expiry_date VARCHAR(5) NOT NULL,
                 email VARCHAR(100) NOT NULL,
                 phone VARCHAR(20),
+                company_name VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -115,14 +112,72 @@ async function initializeDatabase() {
             );
         }
 
+        // Add verification_codes table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS verification_codes (
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(6) NOT NULL,
+                card_id INTEGER NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database initialized successfully');
     } catch (err) {
         console.error('Database initialization error:', err);
     }
 }
 
-// Call initialization on startup
-initializeDatabase();
+// Add this after your initializeDatabase function
+async function addTestData() {
+    try {
+        // Add some test credit card data
+        await pool.query(`
+            INSERT INTO credit_cards (
+                customer_name,
+                card_number_encrypted,
+                cvv_encrypted,
+                expiry_date,
+                email,
+                phone
+            ) VALUES 
+                ($1, $2, $3, $4, $5, $6),
+                ($7, $8, $9, $10, $11, $12),
+                ($13, $14, $15, $16, $17, $18)
+        `, [
+            'John Smith',
+            encrypt('4532123456788901'),
+            encrypt('123'),
+            '05/25',
+            'john.smith@example.com',
+            '555-0123',
+            
+            'Jane Doe',
+            encrypt('5412345678901234'),
+            encrypt('456'),
+            '08/24',
+            'jane.doe@example.com',
+            '555-0124',
+            
+            'Bob Wilson',
+            encrypt('371234567890123'),
+            encrypt('789'),
+            '12/23',
+            'bob.wilson@example.com',
+            '555-0125'
+        ]);
+
+        console.log('Test data added successfully');
+    } catch (err) {
+        console.error('Error adding test data:', err);
+    }
+}
+
+// Call it after database initialization
+initializeDatabase().then(() => {
+    addTestData();
+});
 
 // Authentication routes
 app.post('/api/admin/login', async (req, res) => {
@@ -561,39 +616,160 @@ app.post('/api/admin/verify-code', async (req, res) => {
     }
 });
 
-// Submit new credit card authorization (public route)
+// Credit Card Authorization endpoint
 app.post('/api/cc-auth', async (req, res) => {
-    const { customerName, cardNumber, expiryDate, cvv, email, phone } = req.body;
-    
     try {
-        // Check if all required fields are present
-        if (!customerName || !cardNumber || !expiryDate || !cvv || !email) {
-            return res.status(400).json({ message: 'All required fields must be provided' });
+        // Log the incoming request
+        console.log('CC Auth Request received:', {
+            ...req.body,
+            card_number: '***hidden***',
+            cvv: '***hidden***'
+        });
+
+        const {
+            customer_name,
+            card_number,
+            cvv,
+            expiry_date,
+            email,
+            phone,
+            company
+        } = req.body;
+
+        // Log the extracted values
+        console.log('Extracted values:', {
+            customer_name,
+            expiry_date,
+            email,
+            phone,
+            company,
+            hasCardNumber: !!card_number,
+            hasCvv: !!cvv
+        });
+
+        // Validate required fields
+        if (!customer_name || !card_number || !cvv || !expiry_date || !email) {
+            console.log('Missing required fields:', {
+                hasCustomerName: !!customer_name,
+                hasCardNumber: !!card_number,
+                hasCvv: !!cvv,
+                hasExpiryDate: !!expiry_date,
+                hasEmail: !!email
+            });
+            return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // Encrypt sensitive data
-        const encryptedCardNumber = encrypt(cardNumber);
-        const encryptedCVV = encrypt(cvv);
-
-        const client = await pool.connect();
         try {
-            await client.query('BEGIN');
-            await client.query(
-                'INSERT INTO credit_cards (customer_name, card_number_encrypted, expiry_date, cvv_encrypted, email, phone) VALUES ($1, $2, $3, $4, $5, $6)',
-                [customerName, encryptedCardNumber, expiryDate, encryptedCVV, email, phone]
-            );
-            await client.query('COMMIT');
-            res.json({ success: true });
-        } catch (err) {
-            await client.query('ROLLBACK');
-            throw err;
-        } finally {
-            client.release();
+            // Log pre-encryption
+            console.log('About to encrypt card data');
+            
+            // Encrypt sensitive data
+            const cardNumberEncrypted = encrypt(card_number.toString());
+            const cvvEncrypted = encrypt(cvv.toString());
+            
+            console.log('Encryption successful');
+
+            const query = `
+                INSERT INTO credit_cards (
+                    customer_name,
+                    card_number_encrypted,
+                    cvv_encrypted,
+                    expiry_date,
+                    email,
+                    phone,
+                    company_name
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING id
+            `;
+
+            const values = [
+                customer_name,
+                cardNumberEncrypted,
+                cvvEncrypted,
+                expiry_date,
+                email,
+                phone || null,
+                company || null
+            ];
+
+            console.log('Executing query with values:', {
+                customer_name,
+                email,
+                phone,
+                company,
+                expiry_date
+            });
+
+            const result = await pool.query(query, values);
+            console.log('Query executed successfully. Result:', result.rows[0]);
+
+            res.json({
+                success: true,
+                message: 'Credit card authorization saved successfully',
+                id: result.rows[0].id
+            });
+
+        } catch (encryptError) {
+            console.error('Encryption or database error:', encryptError);
+            throw encryptError;
         }
+
     } catch (err) {
-        console.error('Full error stack:', err.stack);
-        console.error('Error saving credit card:', err);
-        res.status(500).json({ message: 'Failed to save credit card authorization' });
+        console.error('Full error details:', {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+            code: err.code,
+            detail: err.detail
+        });
+        res.status(500).json({
+            message: 'Failed to process credit card authorization',
+            error: err.message
+        });
+    }
+});
+
+// Business search endpoint
+app.get('/api/customer/find', async (req, res) => {
+    try {
+        const { business } = req.query;
+
+        if (!business) {
+            return res.status(400).json({ message: 'Business name is required' });
+        }
+
+        const query = `
+            SELECT 
+                customer_name,
+                email,
+                company_name,
+                RIGHT(card_number_encrypted::text, 4) as last_four
+            FROM credit_cards 
+            WHERE LOWER(company_name) LIKE LOWER($1)
+            ORDER BY created_at DESC
+            LIMIT 1`;
+
+        const result = await pool.query(query, [`%${business}%`]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Business not found' });
+        }
+
+        const customer = result.rows[0];
+        const [firstName, ...lastNameParts] = customer.customer_name.split(' ');
+        const lastName = lastNameParts.join(' ');
+
+        res.json({
+            firstName,
+            lastName,
+            businessName: customer.company_name,
+            lastFour: customer.last_four,
+            customerId: customer.email // Using email as customer ID for now
+        });
+
+    } catch (err) {
+        console.error('Error finding business:', err);
+        res.status(500).json({ message: 'Error searching for business' });
     }
 });
 
@@ -690,7 +866,64 @@ app.use(helmet.contentSecurityPolicy({
     },
 }));
 
+// Add these new endpoints
+app.get('/api/admin/verification-phones', async (req, res) => {
+    // Return list of authorized phone numbers (stored securely)
+    const phones = [
+        { label: "Admin 1", number: "1234567890" },
+        { label: "Admin 2", number: "0987654321" },
+        // Add more as needed
+    ];
+    res.json(phones);
+});
+
+// Initialize Twilio client
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID, 
+    process.env.TWILIO_AUTH_TOKEN
+);
+
+// Update the verification endpoint
+app.post('/api/admin/request-verification', async (req, res) => {
+    const { cardId } = req.body;
+    
+    try {
+        // Generate random 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store code in database
+        await pool.query(
+            'INSERT INTO verification_codes (code, card_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'5 minutes\')',
+            [code, cardId]
+        );
+
+        try {
+            // Send SMS via Twilio
+            await twilioClient.messages.create({
+                body: `Your verification code is: ${code}`,
+                to: '+17198591558',  // Your verified number
+                from: process.env.TWILIO_PHONE_NUMBER  // Your purchased Twilio number
+            });
+
+            console.log('SMS sent successfully');
+            res.json({ success: true });
+        } catch (twilioError) {
+            console.error('Twilio SMS error:', twilioError);
+            // Fall back to email if SMS fails
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: 'gabbyesquibel1999@gmail.com',
+                subject: 'Credit Card Data Verification Code',
+                text: `Your verification code is: ${code}\nThis code will expire in 5 minutes.`
+            });
+        }
+    } catch (err) {
+        console.error('Error generating verification code:', err);
+        res.status(500).json({ message: 'Failed to generate verification code' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-}); 
+});
