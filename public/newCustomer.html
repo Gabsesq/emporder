@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Customer Credit Card Authorization</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <a href="/admin-dashboard.html" class="back-btn">← Back to Dashboard</a>
+            <h1>New Customer Credit Card Authorization</h1>
+        </div>
+
+        <form id="newCustomerForm" class="auth-form">
+            <div class="section">
+                <h2>Customer Profile Information</h2>
+                <div class="form-group">
+                    <label for="customerId">Customer ID</label>
+                    <input type="text" id="customerId" name="customerId" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="customerType">Customer Type</label>
+                    <select id="customerType" name="customerType" required>
+                        <option value="">Select Type</option>
+                        <option value="individual">Individual</option>
+                        <option value="business">Business</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="company">Company</label>
+                    <input type="text" id="company" name="company">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Billing Information</h2>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" required>
+                </div>
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="state">State/Province</label>
+                        <input type="text" id="state" name="state" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="zipCode">Zip/Postal Code</label>
+                        <input type="text" id="zipCode" name="zipCode" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <input type="text" id="country" name="country" required>
+                </div>
+                <div class="form-group">
+                    <label for="fax">Fax</label>
+                    <input type="tel" id="fax" name="fax">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Payment Information</h2>
+                <div class="form-group">
+                    <label for="cardNumber">Card Number</label>
+                    <input type="text" id="cardNumber" name="cardNumber" maxlength="19" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiryDate">Expiration Date (MM/YY)</label>
+                        <input type="text" id="expiryDate" name="expiryDate" maxlength="5" placeholder="MM/YY" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="text" id="cvv" name="cvv" maxlength="4" required>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit Authorization</button>
+        </form>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/newCustomer.js"></script>
+</body>
+</html> 

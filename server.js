@@ -21,15 +21,9 @@ const pool = new Pool({
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
+        pass: process.env.EMAIL_APP_PASSWORD // This should be an App Password, not your regular password
     }
 });
 
@@ -77,20 +71,38 @@ async function initializeDatabase() {
             )
         `);
 
-        // Ensure credit_cards table exists with correct structure
+        // Drop and recreate credit_cards table with all required columns
         await pool.query(`
-            DROP TABLE IF EXISTS credit_cards;
+            DROP TABLE IF EXISTS credit_cards CASCADE;
             CREATE TABLE credit_cards (
                 id SERIAL PRIMARY KEY,
+                customer_id VARCHAR(50),
                 customer_name VARCHAR(100) NOT NULL,
+                customer_type VARCHAR(50),
+                description TEXT,
+                email VARCHAR(100) NOT NULL,
+                phone VARCHAR(20),
+                company VARCHAR(255),
+                address VARCHAR(255),
+                city VARCHAR(100),
+                state VARCHAR(50),
+                zip_code VARCHAR(20),
+                country VARCHAR(100),
+                fax VARCHAR(20),
                 card_number_encrypted TEXT NOT NULL,
                 cvv_encrypted TEXT NOT NULL,
                 expiry_date VARCHAR(5) NOT NULL,
-                email VARCHAR(100) NOT NULL,
-                phone VARCHAR(20),
-                company_name VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_update BOOLEAN DEFAULT false
             )
+        `);
+
+        // Add indexes for better performance
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_customer_name ON credit_cards(customer_name);
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_email ON credit_cards(email);
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_company ON credit_cards(company)
         `);
 
         // Check if admin record exists
@@ -616,115 +628,134 @@ app.post('/api/admin/verify-code', async (req, res) => {
     }
 });
 
-// Credit Card Authorization endpoint
-app.post('/api/cc-auth', async (req, res) => {
+// New Customer endpoint
+app.post('/api/new-customer', async (req, res) => {
+    console.log('New Customer Request received:', {
+        ...req.body,
+        card_number: '***hidden***',
+        cvv: '***hidden***'
+    });
+
     try {
-        // Log the incoming request
-        console.log('CC Auth Request received:', {
-            ...req.body,
-            card_number: '***hidden***',
-            cvv: '***hidden***'
-        });
+        // Encrypt sensitive data
+        const encryptedCard = encrypt(req.body.card_number);
+        const encryptedCvv = encrypt(req.body.cvv);
 
-        const {
-            customer_name,
-            card_number,
-            cvv,
-            expiry_date,
-            email,
-            phone,
-            company
-        } = req.body;
-
-        // Log the extracted values
-        console.log('Extracted values:', {
-            customer_name,
-            expiry_date,
-            email,
-            phone,
-            company,
-            hasCardNumber: !!card_number,
-            hasCvv: !!cvv
-        });
-
-        // Validate required fields
-        if (!customer_name || !card_number || !cvv || !expiry_date || !email) {
-            console.log('Missing required fields:', {
-                hasCustomerName: !!customer_name,
-                hasCardNumber: !!card_number,
-                hasCvv: !!cvv,
-                hasExpiryDate: !!expiry_date,
-                hasEmail: !!email
-            });
-            return res.status(400).json({ message: 'Missing required fields' });
-        }
-
-        try {
-            // Log pre-encryption
-            console.log('About to encrypt card data');
-            
-            // Encrypt sensitive data
-            const cardNumberEncrypted = encrypt(card_number.toString());
-            const cvvEncrypted = encrypt(cvv.toString());
-            
-            console.log('Encryption successful');
-
-            const query = `
-                INSERT INTO credit_cards (
-                    customer_name,
-                    card_number_encrypted,
-                    cvv_encrypted,
-                    expiry_date,
-                    email,
-                    phone,
-                    company_name
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-                RETURNING id
-            `;
-
-            const values = [
+        // Insert into database
+        const result = await pool.query(`
+            INSERT INTO credit_cards (
+                customer_id,
                 customer_name,
-                cardNumberEncrypted,
-                cvvEncrypted,
-                expiry_date,
-                email,
-                phone || null,
-                company || null
-            ];
-
-            console.log('Executing query with values:', {
-                customer_name,
+                customer_type,
+                description,
                 email,
                 phone,
                 company,
-                expiry_date
-            });
+                address,
+                city,
+                state,
+                zip_code,
+                country,
+                fax,
+                card_number_encrypted,
+                cvv_encrypted,
+                expiry_date,
+                is_update
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, false)
+            RETURNING id
+        `, [
+            req.body.customer_id,
+            req.body.customer_name,
+            req.body.customer_type,
+            req.body.description,
+            req.body.email,
+            req.body.phone,
+            req.body.company,
+            req.body.address,
+            req.body.city,
+            req.body.state,
+            req.body.zip_code,
+            req.body.country,
+            req.body.fax,
+            encryptedCard,
+            encryptedCvv,
+            req.body.expiry_date
+        ]);
 
-            const result = await pool.query(query, values);
-            console.log('Query executed successfully. Result:', result.rows[0]);
+        console.log('New customer profile created successfully');
+        res.json({ success: true, id: result.rows[0].id });
 
-            res.json({
-                success: true,
-                message: 'Credit card authorization saved successfully',
-                id: result.rows[0].id
-            });
-
-        } catch (encryptError) {
-            console.error('Encryption or database error:', encryptError);
-            throw encryptError;
-        }
-
-    } catch (err) {
-        console.error('Full error details:', {
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-            code: err.code,
-            detail: err.detail
-        });
+    } catch (error) {
+        console.error('Full error details:', error);
         res.status(500).json({
-            message: 'Failed to process credit card authorization',
-            error: err.message
+            success: false,
+            message: 'Failed to create customer profile',
+            error: error.message
+        });
+    }
+});
+
+// Update Card endpoint
+app.post('/api/update-card', async (req, res) => {
+    console.log('Update Card Request received:', {
+        ...req.body,
+        card_number: '***hidden***',
+        cvv: '***hidden***'
+    });
+
+    try {
+        // Encrypt sensitive data
+        const encryptedCard = encrypt(req.body.card_number);
+        const encryptedCvv = encrypt(req.body.cvv);
+
+        // Insert new record with is_update flag
+        const result = await pool.query(`
+            INSERT INTO credit_cards (
+                customer_name,
+                company,
+                card_number_encrypted,
+                cvv_encrypted,
+                expiry_date,
+                is_update,
+                email,
+                phone,
+                customer_type,
+                description,
+                address,
+                city,
+                state,
+                zip_code,
+                country,
+                fax
+            ) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING id
+        `, [
+            req.body.customer_name,
+            req.body.company,
+            encryptedCard,
+            encryptedCvv,
+            req.body.expiry_date,
+            req.body.email || 'N/A',
+            req.body.phone || 'N/A',
+            'business',
+            'Card Update',
+            req.body.address || 'N/A',
+            req.body.city || 'N/A',
+            req.body.state || 'N/A',
+            req.body.zip_code || 'N/A',
+            req.body.country || 'N/A',
+            req.body.fax || 'N/A'
+        ]);
+
+        console.log('Card update saved successfully');
+        res.json({ success: true, id: result.rows[0].id });
+
+    } catch (error) {
+        console.error('Full error details:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update card information',
+            error: error.message
         });
     }
 });
@@ -776,20 +807,40 @@ app.get('/api/customer/find', async (req, res) => {
 // Get all credit card authorizations (admin only)
 app.get('/api/admin/cc-auth', checkAdminAuth, async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT id, customer_name, card_number_encrypted, cvv_encrypted, expiry_date, email, phone, created_at FROM credit_cards ORDER BY created_at DESC'
-        );
+        const result = await pool.query(`
+            SELECT 
+                id,
+                customer_id,
+                customer_name,
+                customer_type,
+                description,
+                email,
+                phone,
+                company,
+                address,
+                city,
+                state,
+                zip_code,
+                country,
+                fax,
+                card_number_encrypted,
+                cvv_encrypted,
+                expiry_date,
+                created_at,
+                updated_at,
+                is_update
+            FROM credit_cards 
+            ORDER BY created_at DESC
+        `);
 
         // Decrypt sensitive data before sending
         const decryptedCards = result.rows.map(card => ({
-            id: card.id,
-            customer_name: card.customer_name,
+            ...card,
             card_number: decrypt(card.card_number_encrypted),
-            expiry_date: card.expiry_date,
             cvv: decrypt(card.cvv_encrypted),
-            email: card.email,
-            phone: card.phone,
-            created_at: card.created_at
+            // Remove encrypted fields from response
+            card_number_encrypted: undefined,
+            cvv_encrypted: undefined
         }));
 
         res.json(decryptedCards);

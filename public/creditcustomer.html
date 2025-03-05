@@ -16,6 +16,7 @@
         <div class="header-section">
             <a href="/admin-dashboard.html" class="back-btn">← Back to Dashboard</a>
             <h1>Credit Card Authorization Management</h1>
+            <button onclick="showUpdateCardModal()" class="add-btn">Update Card Information</button>
         </div>
         <div id="ccAuthSection">
             <div class="cc-list">
@@ -23,6 +24,220 @@
             </div>
         </div>
     </div>
+
+    <!-- Update Card Modal -->
+    <div id="updateCardModal" class="modal">
+        <div class="modal-content">
+            <h2>Update Card Information</h2>
+            <form id="updateCardForm">
+                <div class="form-group">
+                    <label for="updateBusinessName">Business Name *</label>
+                    <input type="text" id="updateBusinessName" name="updateBusinessName" required>
+                </div>
+                <div class="form-group">
+                    <label for="updateEmail">Email</label>
+                    <input type="email" id="updateEmail" name="updateEmail">
+                </div>
+                <div class="form-group">
+                    <label for="updatePhone">Phone</label>
+                    <input type="tel" id="updatePhone" name="updatePhone">
+                </div>
+
+                <div class="update-section">
+                    <h3>Card Information</h3>
+                    <div class="form-group">
+                        <label>Accepted Methods:</label>
+                        <p class="accepted-cards">American Express, Diners Club, Discover, EnRoute, JCB, MasterCard, Visa</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sameBilling" checked>
+                            Use Existing Billing Address
+                        </label>
+                    </div>
+
+                    <!-- New billing info section - hidden by default -->
+                    <div id="newBillingSection" style="display: none;">
+                        <h3>New Billing Information</h3>
+                        <div class="form-group">
+                            <label for="updateAddress">Address</label>
+                            <input type="text" id="updateAddress" name="updateAddress">
+                        </div>
+                        <div class="form-group">
+                            <label for="updateCity">City</label>
+                            <input type="text" id="updateCity" name="updateCity">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="updateState">State/Province</label>
+                                <input type="text" id="updateState" name="updateState">
+                            </div>
+                            <div class="form-group">
+                                <label for="updateZipCode">Zip/Postal Code</label>
+                                <input type="text" id="updateZipCode" name="updateZipCode">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="updateCountry">Country</label>
+                            <input type="text" id="updateCountry" name="updateCountry">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="updateCardNumber">Card Number *</label>
+                        <input type="text" id="updateCardNumber" name="updateCardNumber" maxlength="16" required>
+                    </div>
+                    
+                    <div class="card-security-row">
+                        <div class="form-group">
+                            <label for="updateExpiryDate">Expiration Date *</label>
+                            <input type="text" id="updateExpiryDate" name="updateExpiryDate" maxlength="5" placeholder="MM/YY" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="updateCvv">CVV *</label>
+                            <input type="text" id="updateCvv" name="updateCvv" maxlength="4" placeholder="***" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Update Card Information</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .cc-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cc-info h3 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+            margin: 20px 0 15px;
+        }
+
+        .cc-info p {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        .cc-info strong {
+            color: #666;
+            min-width: 120px;
+            display: inline-block;
+        }
+
+        .sensitive-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .reveal-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .reveal-btn:hover {
+            background: #45a049;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .delete-btn:hover {
+            background: #da190b;
+        }
+
+        .card-details {
+            margin-top: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button-group button[type="button"] {
+            background-color: #ccc;
+        }
+
+        .button-group button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+
     <script src="creditcustomer.js"></script>
 </body>
 </html>

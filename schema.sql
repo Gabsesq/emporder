@@ -28,18 +28,54 @@ CREATE TABLE admin_auth (
     last_login TIMESTAMP
 );
 
-DROP TABLE IF EXISTS credit_cards;
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS credit_cards CASCADE;
+
+-- Create enhanced credit_cards table
 CREATE TABLE credit_cards (
     id SERIAL PRIMARY KEY,
+    customer_id VARCHAR(50),
     customer_name VARCHAR(100) NOT NULL,
+    customer_type VARCHAR(50),
+    description TEXT,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    company VARCHAR(255),
+    -- Billing Information
+    address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip_code VARCHAR(20),
+    country VARCHAR(100),
+    fax VARCHAR(20),
+    -- Payment Information
     card_number_encrypted TEXT NOT NULL,
     cvv_encrypted TEXT NOT NULL,
     expiry_date VARCHAR(5) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    phone VARCHAR(20),
-    company_name VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_update BOOLEAN DEFAULT false
 );
+
+-- Add indexes for common queries
+CREATE INDEX idx_credit_cards_customer_name ON credit_cards(customer_name);
+CREATE INDEX idx_credit_cards_email ON credit_cards(email);
+CREATE INDEX idx_credit_cards_company ON credit_cards(company);
+
+-- Create function to update timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger for updating timestamp
+CREATE TRIGGER update_credit_cards_updated_at
+    BEFORE UPDATE ON credit_cards
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
@@ -114,6 +150,4 @@ CREATE TABLE payment_info (
 -- Add indexes for common queries
 CREATE INDEX idx_customer_profiles_email ON customer_profiles(email);
 CREATE INDEX idx_customer_profiles_customer_id ON customer_profiles(customer_id);
-CREATE INDEX idx_billing_company ON billing_info(company_name);
-
-ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS company_name VARCHAR(255); 
+CREATE INDEX idx_billing_company ON billing_info(company_name); 

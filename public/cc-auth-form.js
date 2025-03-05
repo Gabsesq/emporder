@@ -116,20 +116,64 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const cardNumber = document.getElementById('cardNumber').value.replace(/\D/g, '');
             const cvv = document.getElementById('cvv').value;
-
-            console.log('Card values:', { cardNumber, cvv });
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.replace(/\D/g, '');
+            const company = document.getElementById('company').value.trim();
+            const customerId = document.getElementById('customerId').value.trim();
+            const customerType = document.getElementById('customerType').value;
+            const description = document.getElementById('description').value.trim();
 
             const formData = {
-                customer_name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
+                customer_id: customerId || 'N/A',
+                customer_name: `${firstName} ${lastName}`,
+                customer_type: customerType || 'N/A',
+                description: description || 'N/A',
+                email: email,
+                phone: phone,
+                company: company || 'N/A',
+                // Billing address
+                address: document.getElementById('address').value.trim() || 'N/A',
+                city: document.getElementById('city').value.trim() || 'N/A',
+                state: document.getElementById('state').value.trim() || 'N/A',
+                zip_code: document.getElementById('zipCode').value.trim() || 'N/A',
+                country: document.getElementById('country').value.trim() || 'N/A',
+                fax: document.getElementById('fax').value.trim() || 'N/A',
+                // Payment info
                 card_number: cardNumber,
                 cvv: cvv,
-                expiry_date: document.getElementById('expiryDate').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                company: document.getElementById('company').value
+                expiry_date: document.getElementById('expiryDate').value.trim(),
+                // Additional fields
+                first_name: firstName,
+                last_name: lastName,
+                is_update: false
             };
 
-            console.log('Form data prepared:', formData);
+            // Add shipping information if different from billing
+            if (!document.getElementById('sameAsBilling').checked) {
+                formData.shipping = {
+                    first_name: document.getElementById('shippingFirstName').value.trim(),
+                    last_name: document.getElementById('shippingLastName').value.trim(),
+                    company: document.getElementById('shippingCompany').value.trim(),
+                    address: document.getElementById('shippingAddress').value.trim(),
+                    city: document.getElementById('shippingCity').value.trim(),
+                    state: document.getElementById('shippingState').value.trim(),
+                    zip_code: document.getElementById('shippingZipCode').value.trim(),
+                    country: document.getElementById('shippingCountry').value.trim(),
+                    phone: document.getElementById('shippingPhone').value.replace(/\D/g, ''),
+                    fax: document.getElementById('shippingFax').value.trim()
+                };
+            }
+
+            // Add shipping profile flag
+            formData.create_shipping_profile = document.getElementById('createShippingProfile').checked;
+
+            console.log('Form data prepared:', {
+                ...formData,
+                card_number: '***hidden***',
+                cvv: '***hidden***'
+            });
 
             try {
                 const response = await fetch('/api/cc-auth', {
@@ -169,42 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update Card Form Handling
     const updateForm = document.getElementById('ccUpdateForm');
-    const findCustomerBtn = document.getElementById('findCustomer');
     
-    if (findCustomerBtn) {
-        findCustomerBtn.addEventListener('click', async () => {
-            const businessName = document.getElementById('existingBusiness').value;
-            try {
-                const response = await fetch(`/api/customer/find?business=${encodeURIComponent(businessName)}`);
-                if (response.ok) {
-                    const customer = await response.json();
-                    
-                    // Update the display fields
-                    document.getElementById('customerName').textContent = 
-                        `${customer.firstName} ${customer.lastName}`;
-                    document.getElementById('displayCustomerId').textContent = 
-                        customer.customerId;
-                    document.getElementById('businessName').textContent = 
-                        customer.businessName;
-                    document.getElementById('currentCard').textContent += 
-                        customer.lastFour;
-                    
-                    // Pre-fill business name if it exists
-                    document.getElementById('updateBusinessName').value = 
-                        customer.businessName;
-                    
-                    // Show the update form
-                    document.getElementById('customerDetails').style.display = 'block';
-                } else {
-                    alert('Business not found');
-                }
-            } catch (err) {
-                console.error('Error finding business:', err);
-                alert('Error searching for business');
-            }
-        });
-    }
-
     if (updateForm) {
         const updateCardNumber = document.getElementById('updateCardNumber');
         const updateExpiryDate = document.getElementById('updateExpiryDate');
@@ -258,26 +267,73 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle update form submission
         updateForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            console.log('Form submission started');
+            
+            const businessName = document.getElementById('updateBusinessName').value.trim();
             const cardNumber = updateCardNumber.value.replace(/\D/g, '');
             const cvv = updateCvv.value;
+            const expiryDate = updateExpiryDate.value;
+            const email = document.getElementById('updateEmail').value.trim();
+            const phone = document.getElementById('updatePhone').value.replace(/\D/g, '');
 
-            if (!validateCardNumber(cardNumber)) {
+            // Validate required fields
+            if (!businessName || !cardNumber || !cvv || !expiryDate) {
+                console.error('Missing required fields:', {
+                    businessName: !!businessName,
+                    cardNumber: !!cardNumber,
+                    cvv: !!cvv,
+                    expiryDate: !!expiryDate
+                });
+                alert('Please fill in all required fields (Business Name and Card Information).');
                 return;
             }
-            if (!validateCVV(cvv)) {
-                alert('Invalid CVV');
-                return;
-            }
 
+            // Match the format expected by the server (similar to new customer form)
             const formData = {
-                customer_name: document.getElementById('customerName').textContent,
+                customer_name: businessName,
+                company: businessName,
                 card_number: cardNumber,
                 cvv: cvv,
-                expiry_date: updateExpiryDate.value,
-                email: document.getElementById('existingBusiness').value,
-                phone: '',
-                company: document.getElementById('businessName').textContent
+                expiry_date: expiryDate,
+                email: email || businessName.toLowerCase().replace(/\s+/g, '') + '@company.com',  // Use business email if not provided
+                phone: phone || 'N/A',           // Use N/A if not provided
+                is_update: true,
+                // Default values for optional fields
+                customer_id: 'N/A',
+                customer_type: 'N/A',
+                description: 'N/A',
+                address: 'N/A',
+                city: 'N/A',
+                state: 'N/A',
+                zip_code: 'N/A',
+                country: 'N/A',
+                fax: 'N/A'
             };
+
+            // Add billing address if provided
+            if (document.getElementById('newBillingSection').style.display !== 'none') {
+                const address = document.getElementById('updateAddress').value.trim();
+                const city = document.getElementById('updateCity').value.trim();
+                const state = document.getElementById('updateState').value.trim();
+                const zipCode = document.getElementById('updateZipCode').value.trim();
+                const country = document.getElementById('updateCountry').value.trim();
+
+                // Only add billing address if all fields are filled
+                if (address && city && state && zipCode && country) {
+                    formData.address = address;
+                    formData.city = city;
+                    formData.state = state;
+                    formData.zip_code = zipCode;
+                    formData.country = country;
+                }
+            }
+
+            console.log('Submitting form data:', { 
+                ...formData, 
+                card_number: '***hidden***', 
+                cvv: '***hidden***'
+            });
 
             try {
                 const response = await fetch('/api/cc-auth', {
@@ -288,33 +344,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(formData)
                 });
 
-                if (response.ok) {
-                    // Show success message
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'success-message';
-                    successDiv.innerHTML = `
-                        <h3>Thank you!</h3>
-                        <p>Your card information has been updated successfully.</p>
-                    `;
-                    
-                    // Insert message at the top of the form
-                    updateForm.insertBefore(successDiv, updateForm.firstChild);
-                    
-                    // Clear only the card fields
-                    updateCardNumber.value = '';
-                    updateExpiryDate.value = '';
-                    updateCvv.value = '';
-                    
-                    // Remove success message after 5 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 5000);
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Failed to submit card information');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to update card information');
                 }
+
+                // Show success message
+                const successDiv = document.createElement('div');
+                successDiv.className = 'success-message';
+                successDiv.innerHTML = `
+                    <h3>Thank you!</h3>
+                    <p>Your card information has been updated successfully.</p>
+                `;
+                
+                // Insert message at the top of the form
+                updateForm.insertBefore(successDiv, updateForm.firstChild);
+                
+                // Clear only the card fields
+                updateCardNumber.value = '';
+                updateExpiryDate.value = '';
+                updateCvv.value = '';
+                
+                // Remove success message after 5 seconds
+                setTimeout(() => {
+                    successDiv.remove();
+                }, 5000);
             } catch (err) {
-                alert('Error submitting card information: ' + err.message);
+                console.error('Submission error:', err);
+                alert('Error updating card information: ' + err.message);
             }
         });
     }
