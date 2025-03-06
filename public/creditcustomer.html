@@ -16,7 +16,6 @@
         <div class="header-section">
             <a href="/admin-dashboard.html" class="back-btn">← Back to Dashboard</a>
             <h1>Credit Card Authorization Management</h1>
-            <button onclick="showUpdateCardModal()" class="add-btn">Update Card Information</button>
         </div>
         <div id="ccAuthSection">
             <div class="cc-list">
@@ -25,88 +24,7 @@
         </div>
     </div>
 
-    <!-- Update Card Modal -->
-    <div id="updateCardModal" class="modal">
-        <div class="modal-content">
-            <h2>Update Card Information</h2>
-            <form id="updateCardForm">
-                <div class="form-group">
-                    <label for="updateBusinessName">Business Name *</label>
-                    <input type="text" id="updateBusinessName" name="updateBusinessName" required>
-                </div>
-                <div class="form-group">
-                    <label for="updateEmail">Email</label>
-                    <input type="email" id="updateEmail" name="updateEmail">
-                </div>
-                <div class="form-group">
-                    <label for="updatePhone">Phone</label>
-                    <input type="tel" id="updatePhone" name="updatePhone">
-                </div>
-
-                <div class="update-section">
-                    <h3>Card Information</h3>
-                    <div class="form-group">
-                        <label>Accepted Methods:</label>
-                        <p class="accepted-cards">American Express, Diners Club, Discover, EnRoute, JCB, MasterCard, Visa</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="sameBilling" checked>
-                            Use Existing Billing Address
-                        </label>
-                    </div>
-
-                    <!-- New billing info section - hidden by default -->
-                    <div id="newBillingSection" style="display: none;">
-                        <h3>New Billing Information</h3>
-                        <div class="form-group">
-                            <label for="updateAddress">Address</label>
-                            <input type="text" id="updateAddress" name="updateAddress">
-                        </div>
-                        <div class="form-group">
-                            <label for="updateCity">City</label>
-                            <input type="text" id="updateCity" name="updateCity">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="updateState">State/Province</label>
-                                <input type="text" id="updateState" name="updateState">
-                            </div>
-                            <div class="form-group">
-                                <label for="updateZipCode">Zip/Postal Code</label>
-                                <input type="text" id="updateZipCode" name="updateZipCode">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="updateCountry">Country</label>
-                            <input type="text" id="updateCountry" name="updateCountry">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="updateCardNumber">Card Number *</label>
-                        <input type="text" id="updateCardNumber" name="updateCardNumber" maxlength="16" required>
-                    </div>
-                    
-                    <div class="card-security-row">
-                        <div class="form-group">
-                            <label for="updateExpiryDate">Expiration Date *</label>
-                            <input type="text" id="updateExpiryDate" name="updateExpiryDate" maxlength="5" placeholder="MM/YY" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="updateCvv">CVV *</label>
-                            <input type="text" id="updateCvv" name="updateCvv" maxlength="4" placeholder="***" required>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="submit-btn">Update Card Information</button>
-            </form>
-        </div>
-    </div>
-
+ 
     <style>
         .modal {
             display: none;
