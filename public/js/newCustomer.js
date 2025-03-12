@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Collect form data
             const formData = {
-                customer_id: document.getElementById('customerId').value.trim(),
+                business_name: document.getElementById('businessName').value.trim(),
                 first_name: document.getElementById('firstName').value.trim(),
                 last_name: document.getElementById('lastName').value.trim(),
                 customer_name: `${document.getElementById('firstName').value.trim()} ${document.getElementById('lastName').value.trim()}`,

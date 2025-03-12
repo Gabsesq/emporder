@@ -93,13 +93,12 @@ window.showCardDetails = (card) => {
     modalContent.innerHTML = `
         <div class="modal-section">
             <h3>Customer Profile</h3>
-            <p><strong>Customer ID:</strong> ${card.customer_id}</p>
+            <p><strong>Business Name:</strong> ${card.business_name || card.company || 'N/A'}</p>
             <p><strong>Customer Name:</strong> ${card.customer_name}</p>
             <p><strong>Customer Type:</strong> ${card.customer_type}</p>
             <p><strong>Description:</strong> ${card.description}</p>
             <p><strong>Email:</strong> ${card.email}</p>
             <p><strong>Phone:</strong> ${card.phone}</p>
-            <p><strong>Company:</strong> ${card.company}</p>
         </div>
 
         <div class="modal-section">
