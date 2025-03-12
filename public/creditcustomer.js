@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <p>${safeCard.email}</p>
                             </div>
                             <button class="view-details-btn" onclick="event.stopPropagation(); showCardDetails(${JSON.stringify(safeCard).replace(/"/g, '&quot;')})">
-                                View Details
+                                View
                             </button>
                         </div>
                     </div>`;

@@ -92,10 +92,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
+            width: 100%;
         }
 
         .cc-item-preview .customer-info {
-            flex-grow: 1;
+            flex: 1;
+            min-width: 0;
         }
 
         .cc-item-preview h3 {
@@ -109,17 +112,34 @@
         }
 
         .view-details-btn {
-            background: rgb(184, 62, 184);
+            background: linear-gradient(135deg, rgba(190, 46, 190, 0.8), rgba(155, 51, 155, 0.9));
             color: white;
             border: none;
-            padding: 8px 30px;
-            border-radius: 4px;
+            padding: 8px 20px;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.9em;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(190, 46, 190, 0.2);
+            min-width: 120px;
+            white-space: nowrap;
+            text-align: center;
+            display: inline-block;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .view-details-btn:hover {
-            background: rgba(190, 46, 190, 0.9);
+            background: linear-gradient(135deg, rgba(190, 46, 190, 0.9), rgba(155, 51, 155, 1));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(190, 46, 190, 0.3);
+        }
+
+        .view-details-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(190, 46, 190, 0.2);
         }
 
         .modal-section {
