@@ -86,56 +86,126 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Function to show card details in modal
-window.showCardDetails = (card) => {
+window.showCardDetails = async (card) => {
     const modalContent = document.getElementById('modalContent');
     const modal = document.getElementById('detailModal');
 
-    modalContent.innerHTML = `
-        <div class="modal-section">
-            <h3>Customer Profile</h3>
-            <p><strong>Business Name:</strong> ${card.business_name || card.company || 'N/A'}</p>
-            <p><strong>Customer Name:</strong> ${card.customer_name}</p>
-            <p><strong>Customer Type:</strong> ${card.customer_type}</p>
-            <p><strong>Description:</strong> ${card.description}</p>
-            <p><strong>Email:</strong> ${card.email}</p>
-            <p><strong>Phone:</strong> ${card.phone}</p>
-        </div>
+    // First, request verification code
+    try {
+        const response = await fetch('/api/request-verification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                cardId: card.id,
+                email: 'gabbye@petreleaf.com'
+            })
+        });
 
-        <div class="modal-section">
-            <h3>Billing Information</h3>
-            <p><strong>Address:</strong> ${card.address}</p>
-            <p><strong>City:</strong> ${card.city}</p>
-            <p><strong>State:</strong> ${card.state}</p>
-            <p><strong>Zip Code:</strong> ${card.zip_code}</p>
-            <p><strong>Country:</strong> ${card.country}</p>
-            <p><strong>Fax:</strong> ${card.fax}</p>
-        </div>
+        if (!response.ok) {
+            throw new Error('Failed to send verification code');
+        }
 
-        <div class="modal-section">
-            <h3>Payment Information</h3>
-            <div class="sensitive-info">
-                <button class="reveal-btn" onclick="toggleSensitiveData(this, ${card.id})">
-                    Show Hidden Numbers
-                </button>
-                <div class="card-details">
-                    <p><strong>Card:</strong> 
-                        <span class="masked-number">**** **** **** ${card.card_number.slice(-4)}</span>
-                        <span class="full-number" style="display: none">${card.card_number}</span>
-                    </p>
-                    <p><strong>CVV:</strong> 
-                        <span class="masked-cvv">***</span>
-                        <span class="full-cvv" style="display: none">${card.cvv}</span>
-                    </p>
+        // Show verification input modal
+        modalContent.innerHTML = `
+            <div class="modal-section">
+                <h3>Security Verification Required</h3>
+                <p>A verification code has been sent to gabbye@petreleaf.com</p>
+                <div class="form-group">
+                    <label for="verificationCode">Enter Verification Code:</label>
+                    <input type="text" id="verificationCode" maxlength="6" placeholder="Enter 6-digit code">
                 </div>
+                <button onclick="verifyAndShowDetails(${JSON.stringify(card).replace(/"/g, '&quot;')})" class="submit-btn">
+                    Verify
+                </button>
             </div>
-            <p><strong>Expiry:</strong> ${card.expiry_date}</p>
-            <p><strong>Added:</strong> ${new Date(card.created_at).toLocaleDateString()}</p>
-        </div>
-        
-        <button onclick="deleteCCAuth(${card.id})" class="delete-btn">Delete</button>
-    `;
+        `;
 
-    modal.style.display = 'block';
+        modal.style.display = 'block';
+
+    } catch (error) {
+        console.error('Error requesting verification:', error);
+        alert('Failed to initiate verification. Please try again.');
+    }
+};
+
+// Function to verify code and show details
+window.verifyAndShowDetails = async (card) => {
+    const verificationCode = document.getElementById('verificationCode').value.trim();
+    
+    if (!verificationCode) {
+        alert('Please enter the verification code');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/verify-code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                code: verificationCode,
+                cardId: card.id
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Invalid verification code');
+        }
+
+        // If verification successful, show card details
+        const modalContent = document.getElementById('modalContent');
+        modalContent.innerHTML = `
+            <div class="modal-section">
+                <h3>Customer Profile</h3>
+                <p><strong>Business Name:</strong> ${card.business_name || card.company || 'N/A'}</p>
+                <p><strong>Customer Name:</strong> ${card.customer_name}</p>
+                <p><strong>Customer Type:</strong> ${card.customer_type}</p>
+                <p><strong>Description:</strong> ${card.description}</p>
+                <p><strong>Email:</strong> ${card.email}</p>
+                <p><strong>Phone:</strong> ${card.phone}</p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Billing Information</h3>
+                <p><strong>Address:</strong> ${card.address}</p>
+                <p><strong>City:</strong> ${card.city}</p>
+                <p><strong>State:</strong> ${card.state}</p>
+                <p><strong>Zip Code:</strong> ${card.zip_code}</p>
+                <p><strong>Country:</strong> ${card.country}</p>
+                <p><strong>Fax:</strong> ${card.fax}</p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Payment Information</h3>
+                <div class="sensitive-info">
+                    <button class="reveal-btn" onclick="toggleSensitiveData(this, ${card.id})">
+                        Show Hidden Numbers
+                    </button>
+                    <div class="card-details">
+                        <p><strong>Card:</strong> 
+                            <span class="masked-number">**** **** **** ${card.card_number.slice(-4)}</span>
+                            <span class="full-number" style="display: none">${card.card_number}</span>
+                        </p>
+                        <p><strong>CVV:</strong> 
+                            <span class="masked-cvv">***</span>
+                            <span class="full-cvv" style="display: none">${card.cvv}</span>
+                        </p>
+                    </div>
+                </div>
+                <p><strong>Expiry:</strong> ${card.expiry_date}</p>
+                <p><strong>Added:</strong> ${new Date(card.created_at).toLocaleDateString()}</p>
+            </div>
+            
+            <button onclick="deleteCCAuth(${card.id})" class="delete-btn">Delete</button>
+        `;
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('Verification failed. Please try again.');
+    }
 };
 
 // Delete CC Auth function

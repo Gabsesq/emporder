@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const twilio = require('twilio');
+const speakeasy = require('speakeasy');
 
 const app = express();
 app.use(bodyParser.json());
@@ -22,8 +23,8 @@ const pool = new Pool({
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD // This should be an App Password, not your regular password
+        user: process.env.EMAIL_USER, // your gmail address
+        pass: process.env.EMAIL_APP_PASSWORD // your gmail app password
     }
 });
 
@@ -61,48 +62,108 @@ function decrypt(text) {
 // Initialize database tables
 async function initializeDatabase() {
     try {
+        // Create audit logs table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id SERIAL PRIMARY KEY,
+                event_type VARCHAR(50) NOT NULL,
+                user_id VARCHAR(100) NOT NULL,
+                details TEXT,
+                ip_address VARCHAR(45),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
+            CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+        `);
+
+        // Create admin authentication table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS admin_auth (
                 id SERIAL PRIMARY KEY,
-                email VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL UNIQUE,
                 verification_code VARCHAR(6),
                 code_expiry TIMESTAMP,
-                last_login TIMESTAMP
-            )
+                last_login TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$')
+            );
+            CREATE INDEX IF NOT EXISTS idx_admin_auth_email ON admin_auth(email);
         `);
 
-        // Drop and recreate credit_cards table with all required columns
+        // Create verification codes table with proper constraints
+        await pool.query(`
+            DROP TABLE IF EXISTS verification_codes;
+            CREATE TABLE verification_codes (
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(64) NOT NULL,  -- Increased from 6 to 64 to store Speakeasy secret
+                card_id INTEGER NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                used BOOLEAN DEFAULT FALSE,
+                CONSTRAINT fk_card
+                    FOREIGN KEY(card_id)
+                    REFERENCES credit_cards(id)
+                    ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_verification_codes_card_id ON verification_codes(card_id);
+            CREATE INDEX IF NOT EXISTS idx_verification_codes_expires_at ON verification_codes(expires_at);
+        `);
+
+        // Drop and recreate credit_cards table with improved structure
         await pool.query(`
             DROP TABLE IF EXISTS credit_cards CASCADE;
             CREATE TABLE credit_cards (
                 id SERIAL PRIMARY KEY,
                 customer_id VARCHAR(50),
                 customer_name VARCHAR(100) NOT NULL,
-                customer_type VARCHAR(50),
+                first_name VARCHAR(50),
+                last_name VARCHAR(50),
+                customer_type VARCHAR(50) CHECK (customer_type IN ('individual', 'business')),
                 description TEXT,
                 email VARCHAR(100) NOT NULL,
                 phone VARCHAR(20),
                 company VARCHAR(255),
-                address VARCHAR(255),
-                city VARCHAR(100),
-                state VARCHAR(50),
-                zip_code VARCHAR(20),
-                country VARCHAR(100),
+                address VARCHAR(255) NOT NULL,
+                city VARCHAR(100) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                zip_code VARCHAR(20) NOT NULL,
+                country VARCHAR(100) NOT NULL,
                 fax VARCHAR(20),
                 card_number_encrypted TEXT NOT NULL,
                 cvv_encrypted TEXT NOT NULL,
                 expiry_date VARCHAR(5) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_update BOOLEAN DEFAULT false
-            )
-        `);
+                is_update BOOLEAN DEFAULT false,
+                active BOOLEAN DEFAULT true,
+                last_verified TIMESTAMP,
+                CONSTRAINT valid_email_check CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'),
+                CONSTRAINT valid_expiry_date CHECK (expiry_date ~ '^(0[1-9]|1[0-2])/[0-9]{2}$')
+            );
 
-        // Add indexes for better performance
-        await pool.query(`
             CREATE INDEX IF NOT EXISTS idx_credit_cards_customer_name ON credit_cards(customer_name);
             CREATE INDEX IF NOT EXISTS idx_credit_cards_email ON credit_cards(email);
-            CREATE INDEX IF NOT EXISTS idx_credit_cards_company ON credit_cards(company)
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_company ON credit_cards(company);
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_customer_type ON credit_cards(customer_type);
+            CREATE INDEX IF NOT EXISTS idx_credit_cards_created_at ON credit_cards(created_at);
+        `);
+
+        // Add trigger to update updated_at timestamp
+        await pool.query(`
+            CREATE OR REPLACE FUNCTION update_updated_at_column()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.updated_at = CURRENT_TIMESTAMP;
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql';
+
+            DROP TRIGGER IF EXISTS update_credit_cards_updated_at ON credit_cards;
+            CREATE TRIGGER update_credit_cards_updated_at
+                BEFORE UPDATE ON credit_cards
+                FOR EACH ROW
+                EXECUTE FUNCTION update_updated_at_column();
         `);
 
         // Check if admin record exists
@@ -116,28 +177,12 @@ async function initializeDatabase() {
                 'INSERT INTO admin_auth (email) VALUES ($1)',
                 ['gabbyesquibel1999@gmail.com']
             );
-        } else {
-            // Ensure logged out state on server start
-            await pool.query(
-                'UPDATE admin_auth SET last_login = NULL WHERE email = $1',
-                ['gabbyesquibel1999@gmail.com']
-            );
         }
-
-        // Add verification_codes table
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS verification_codes (
-                id SERIAL PRIMARY KEY,
-                code VARCHAR(6) NOT NULL,
-                card_id INTEGER NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
 
         console.log('Database initialized successfully');
     } catch (err) {
         console.error('Database initialization error:', err);
+        throw err;
     }
 }
 
@@ -971,6 +1016,151 @@ app.post('/api/admin/request-verification', async (req, res) => {
     } catch (err) {
         console.error('Error generating verification code:', err);
         res.status(500).json({ message: 'Failed to generate verification code' });
+    }
+});
+
+// Request verification code endpoint
+app.post('/api/request-verification', async (req, res) => {
+    const client = await pool.connect();
+    console.log('Verification request received for card:', req.body.cardId);
+    
+    try {
+        await client.query('BEGIN');
+        
+        const { cardId } = req.body;
+        
+        if (!cardId) {
+            throw new Error('Card ID is required');
+        }
+
+        // Check if card exists
+        const cardCheck = await client.query(
+            'SELECT id FROM credit_cards WHERE id = $1',
+            [cardId]
+        );
+
+        if (cardCheck.rows.length === 0) {
+            throw new Error('Card not found');
+        }
+
+        // Generate a new secret
+        const secret = speakeasy.generateSecret({
+            name: `PetreLeaf Card ${cardId}`,
+            issuer: 'PetreLeaf'
+        });
+
+        console.log('Generated new secret for card:', cardId);
+
+        // Clear any existing codes for this card
+        await client.query(
+            'DELETE FROM verification_codes WHERE card_id = $1',
+            [cardId]
+        );
+
+        // Store the secret
+        await client.query(
+            'INSERT INTO verification_codes (code, card_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'15 minutes\')',
+            [secret.base32, cardId]
+        );
+
+        await client.query('COMMIT');
+
+        console.log('Verification setup completed for card:', cardId);
+
+        // Return the secret and QR code URL
+        res.json({ 
+            success: true,
+            secret: secret.base32,
+            otpauth_url: secret.otpauth_url
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error in request-verification:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message || 'Failed to generate verification code'
+        });
+    } finally {
+        client.release();
+    }
+});
+
+// Verify code endpoint
+app.post('/api/verify-code', async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        const { code, cardId } = req.body;
+
+        if (!code || !cardId) {
+            throw new Error('Code and card ID are required');
+        }
+
+        // Get the secret from database
+        const result = await client.query(
+            `SELECT * FROM verification_codes 
+             WHERE card_id = $1 
+             AND expires_at > NOW() 
+             AND NOT used
+             ORDER BY created_at DESC 
+             LIMIT 1`,
+            [cardId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error('No valid verification setup found');
+        }
+
+        // Verify the token
+        const verified = speakeasy.totp.verify({
+            secret: result.rows[0].code,
+            encoding: 'base32',
+            token: code,
+            window: 1 // Allow 1 step before/after for time drift
+        });
+
+        if (!verified) {
+            throw new Error('Invalid verification code');
+        }
+
+        // Mark code as used
+        await client.query(
+            'UPDATE verification_codes SET used = true WHERE id = $1',
+            [result.rows[0].id]
+        );
+
+        // Get card details
+        const cardDetails = await client.query(
+            'SELECT card_number_encrypted, cvv_encrypted, expiry_date FROM credit_cards WHERE id = $1',
+            [cardId]
+        );
+
+        if (cardDetails.rows.length === 0) {
+            throw new Error('Card not found');
+        }
+
+        await client.query('COMMIT');
+
+        // Return decrypted card details
+        res.json({
+            success: true,
+            card_number: decrypt(cardDetails.rows[0].card_number_encrypted),
+            cvv: decrypt(cardDetails.rows[0].cvv_encrypted),
+            expiry_date: cardDetails.rows[0].expiry_date
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error in verify-code:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message || 'Failed to verify code'
+        });
+    } finally {
+        client.release();
     }
 });
 

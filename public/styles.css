@@ -365,74 +365,69 @@ body {
     position: relative;
     background-color: #fff;
     margin: 15% auto;
-    padding: 20px;
-    width: 80%;
+    padding: 30px;
+    width: 90%;
     max-width: 500px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .modal-content h2 {
     margin-bottom: 20px;
     color: #333;
+    text-align: center;
 }
 
-.modal-content form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.modal-content input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.modal-content label {
+.modal-content img {
     display: block;
-    margin-bottom: 5px;
-    color: #666;
+    margin: 20px auto;
+    max-width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content code {
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: monospace;
 }
 
 .button-group {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.verify-btn {
+    background: linear-gradient(135deg, rgba(190, 46, 190, 0.8), rgba(155, 51, 155, 0.9));
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
 }
 
 .cancel-btn {
-    padding: 8px 16px;
-    background-color: #fff;
+    background: #f5f5f5;
+    color: #666;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 10px 25px;
+    border-radius: 6px;
     cursor: pointer;
 }
 
-.submit-btn {
-    padding: 8px 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.submit-btn:hover {
-    background-color: #45a049;
-}
-
-.add-btn {
-    padding: 8px 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 20px;
+#verificationCode {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid rgba(190, 46, 190, 0.2);
+    border-radius: 8px;
+    font-size: 1.2em;
+    text-align: center;
+    letter-spacing: 2px;
 }
 
 .phone-options {
@@ -453,28 +448,6 @@ body {
 
 .phone-option:hover {
     background: #e0e0e0;
-}
-
-#verificationCode {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.verify-btn {
-    width: 100%;
-    padding: 10px;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.verify-btn:hover {
-    background: #45a049;
 }
 
 /* Credit card list styles */
