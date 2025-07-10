@@ -362,8 +362,8 @@ app.post('/api/orders', async (req, res) => {
         const { firstName, lastName, shippingAddress, notes, products } = req.body;
         
         // Validate product count
-        if (products.length > 3) {
-            throw new Error('Maximum 3 products allowed');
+        if (products.length > 6) {
+            throw new Error('Maximum 6 products allowed');
         }
 
         // Verify product availability and update quantities

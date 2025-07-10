@@ -51,8 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target.classList.contains('plus')) {
             const totalQuantity = updateSelectedCount();
             
-            if (totalQuantity >= 3) {
-                alert('You can only select up to 3 items');
+            if (totalQuantity >= 6) {
+                alert('You can only select up to 6 items');
                 return;
             }
             input.value = Math.min(currentValue + 1, max);
@@ -67,16 +67,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         
         const totalQuantity = updateSelectedCount();
-        if (totalQuantity > 3) {
-            alert('You can only order up to 3 items total');
+        if (totalQuantity > 6) {
+            alert('You can only order up to 6 items total');
             return;
         }
 
         const selectedProducts = Array.from(productsList.querySelectorAll('.product-item'))
-            .map(item => ({
-                code: item.querySelector('span').textContent.split(' ')[0],
-                quantity: parseInt(item.querySelector('input').value)
-            }))
+            .map(item => {
+                const fullText = item.querySelector('span').textContent;
+                const productCode = fullText.split(' (')[0]; // Split at the first space followed by parenthesis
+                return {
+                    code: productCode,
+                    quantity: parseInt(item.querySelector('input').value)
+                };
+            })
             .filter(product => product.quantity > 0);
 
         console.log('Submitting order with products:', selectedProducts);
